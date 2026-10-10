@@ -17,16 +17,18 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      -       - name: Set up Android SDK
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 'latest'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
       - name: Create Android project
+        shell: bash
         run: |
           mkdir -p app/src/main/java/com/dnsolutions/machinefixlog
           mkdir -p app/src/main/res/values
@@ -80,8 +82,7 @@ jobs:
               <uses-permission android:name="android.permission.INTERNET"/>
               <application
                   android:theme="@style/AppTheme"
-                  android:label="DN Solutions Machine Fix Log"
-                  android:usesCleartextTraffic="false">
+                  android:label="DN Solutions Machine Fix Log">
                   <activity
                       android:name=".MainActivity"
                       android:exported="true">
@@ -97,10 +98,8 @@ jobs:
           cat > app/src/main/res/values/styles.xml <<'EOF'
           <resources>
               <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
-                  <item name="android:fontFamily">sans</item>
                   <item name="android:statusBarColor">#0A1020</item>
                   <item name="android:navigationBarColor">#0A1020</item>
-                  <item name="android:windowLightStatusBar">false</item>
               </style>
           </resources>
           EOF
@@ -121,7 +120,6 @@ jobs:
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-
                   getWindow().setStatusBarColor(Color.rgb(10, 16, 32));
                   getWindow().setNavigationBarColor(Color.rgb(10, 16, 32));
 
@@ -130,8 +128,6 @@ jobs:
                   settings.setJavaScriptEnabled(true);
                   settings.setDomStorageEnabled(true);
                   settings.setDatabaseEnabled(true);
-
-                  webView.setBackgroundColor(Color.rgb(10, 16, 32));
                   webView.setWebViewClient(new WebViewClient());
                   setContentView(webView);
 
