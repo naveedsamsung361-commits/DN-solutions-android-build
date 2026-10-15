@@ -1,0 +1,1526 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>DN Solutions Machine Fix Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column that widens on desktop. Sticky header holds the main action, then a summary strip, three tabs (Jobs, Repeats, Machines), and a side sheet for the record form. Look: service-bay nameplate type (Barlow Condensed) over plain Plex, steel-blue accent, amber / green / red reserved for status. */
+:root {
+  --bg: #edf0f3;
+  --surface: #ffffff;
+  --surface-2: #f4f6f8;
+  --line: #d3dae1;
+  --fg: #1a2430;
+  --muted: #566574;
+  --accent: #2a5b8a;
+  --accent-fg: #ffffff;
+  --accent-soft: #dfeaf5;
+  --open: #9a4a00;
+  --open-bg: #fcecd2;
+  --prog: #1f5384;
+  --prog-bg: #dcebf8;
+  --fixed: #17653f;
+  --fixed-bg: #dcf1e5;
+  --rep: #a52a1f;
+  --rep-bg: #fbe4e1;
+  --scrim: rgba(10, 16, 24, 0.5);
+  --f-display: 'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', sans-serif;
+  --f-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11171d;
+    --surface: #1a222b;
+    --surface-2: #212b36;
+    --line: #2f3b48;
+    --fg: #e5eaef;
+    --muted: #9aa8b6;
+    --accent: #78b0e0;
+    --accent-fg: #0e1822;
+    --accent-soft: #1f3447;
+    --open: #f0b560;
+    --open-bg: #3a2c15;
+    --prog: #8fc0ea;
+    --prog-bg: #1f3447;
+    --fixed: #66c898;
+    --fixed-bg: #173429;
+    --rep: #f59088;
+    --rep-bg: #3d201e;
+    --scrim: rgba(0, 0, 0, 0.62);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11171d;
+  --surface: #1a222b;
+  --surface-2: #212b36;
+  --line: #2f3b48;
+  --fg: #e5eaef;
+  --muted: #9aa8b6;
+  --accent: #78b0e0;
+  --accent-fg: #0e1822;
+  --accent-soft: #1f3447;
+  --open: #f0b560;
+  --open-bg: #3a2c15;
+  --prog: #8fc0ea;
+  --prog-bg: #1f3447;
+  --fixed: #66c898;
+  --fixed-bg: #173429;
+  --rep: #f59088;
+  --rep-bg: #3d201e;
+  --scrim: rgba(0, 0, 0, 0.62);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 15px/1.5 var(--f-body);
+  padding-inline: 16px;
+  padding-block: 0 48px;
+}
+.app { max-width: 980px; margin-inline: auto; }
+h1, h2, h3, p, ol, dl, dd { margin: 0; }
+button { font: inherit; color: inherit; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Header */
+.top {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.brand { min-width: 0; }
+.brand h1 {
+  font: 700 28px/1 var(--f-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.brand .sub { font: 400 12px var(--f-mono); color: var(--muted); margin-top: 4px; }
+.btn {
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.primary:hover { filter: brightness(1.08); background: var(--accent); }
+.btn.danger { background: var(--rep); border-color: var(--rep); color: var(--surface); }
+.btn.ghost { background: transparent; }
+.btn.small { min-height: 34px; padding: 5px 10px; font-size: 13px; }
+
+/* Summary strip */
+.stats {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+@media (min-width: 640px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+.stat { background: var(--surface); padding: 10px 14px; min-width: 0; }
+.stat .k { font: 600 13px var(--f-display); letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+.stat .v { font: 500 22px/1.3 var(--f-mono); font-variant-numeric: tabular-nums; }
+.stat .v.warn { color: var(--rep); }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-block: 18px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tab {
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 10px 14px;
+  font: 600 18px var(--f-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.tab .n { font: 500 12px var(--f-mono); margin-left: 6px; }
+
+/* Toolbar */
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; }
+.toolbar .grow { flex: 1 1 240px; min-width: 0; }
+.toolbar .cat { flex: 0 1 200px; min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+.chip {
+  min-height: 34px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.chip.machine { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+input, select, textarea {
+  width: 100%;
+  font: 400 16px/1.4 var(--f-body);
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+}
+textarea { resize: vertical; min-height: 78px; }
+input.mono-in { font-family: var(--f-mono); font-size: 15px; }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.8; }
+
+/* Lists and cards */
+.list-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-block: 16px 10px; }
+.list-head .count { font: 500 13px var(--f-mono); color: var(--muted); }
+.banner {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+  margin-top: 16px; padding: 10px 14px; border-radius: 8px;
+  background: var(--accent-soft); border: 1px solid var(--line); font-size: 14px;
+}
+.list { display: grid; gap: 10px; grid-template-columns: 1fr; }
+@media (min-width: 840px) { .list { grid-template-columns: 1fr 1fr; } }
+.card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.card[role="button"] { cursor: pointer; }
+.card[role="button"]:hover { border-color: var(--accent); }
+.card h3 { font: 600 19px/1.2 var(--f-display); letter-spacing: 0.03em; overflow-wrap: anywhere; }
+.card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; flex-shrink: 0; max-width: 55%; }
+.pill {
+  font: 600 13px/1 var(--f-display);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.pill.open { background: var(--open-bg); color: var(--open); }
+.pill.prog { background: var(--prog-bg); color: var(--prog); }
+.pill.fixed { background: var(--fixed-bg); color: var(--fixed); }
+.pill.rep { background: var(--rep-bg); color: var(--rep); }
+.pill.ex { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.pill.urg { background: var(--rep); color: var(--surface); }
+.meta { font-size: 13.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 10px; overflow-wrap: anywhere; }
+.meta .sn { font: 500 13px var(--f-mono); color: var(--fg); }
+.times { display: flex; flex-wrap: wrap; gap: 2px 16px; font: 400 12.5px/1.5 var(--f-mono); color: var(--muted); }
+.times b { font-weight: 500; color: var(--fg); }
+.clamp { font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.clamp b { font: 600 13px var(--f-display); letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin-right: 6px; }
+
+.empty {
+  padding: 28px 18px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  text-align: left;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+.empty h3 { font: 600 20px var(--f-display); letter-spacing: 0.04em; text-transform: uppercase; }
+.empty p { color: var(--muted); max-width: 56ch; }
+
+/* Repeats */
+.block + .block { margin-top: 28px; }
+.block > h2 { font: 700 20px var(--f-display); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 4px; }
+.block > .hint { color: var(--muted); font-size: 14px; margin-bottom: 12px; max-width: 62ch; }
+.count-badge { font: 700 26px/1 var(--f-display); letter-spacing: 0.03em; color: var(--rep); white-space: nowrap; }
+.occ { list-style: none; padding: 0; display: grid; border-top: 1px solid var(--line); }
+.occ li { border-bottom: 1px solid var(--line); }
+.occ-btn {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 6.6rem minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: baseline;
+  text-align: left;
+  padding: 8px 2px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-size: 13.5px;
+}
+.occ-btn:hover { background: var(--surface-2); }
+.occ-btn .d { font: 500 12.5px var(--f-mono); }
+.occ-btn .gap { font: 400 12px var(--f-mono); color: var(--muted); }
+.occ-btn .o-txt { min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.avg { font-size: 14px; }
+.avg b { font-weight: 600; }
+.bars { display: grid; gap: 10px; }
+.bar-row { display: grid; gap: 4px; }
+.bar-top { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.bar-top span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.bar-top .c { font: 500 13px var(--f-mono); white-space: nowrap; color: var(--muted); }
+.bar { height: 8px; border-radius: 4px; background: var(--accent-soft); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.cols { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; align-items: end; border-bottom: 1px solid var(--line); }
+.col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; }
+.col i { display: block; width: 100%; max-width: 48px; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; }
+.col .cn { font: 500 13px var(--f-mono); }
+.cols-l { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 6px; font: 400 12px var(--f-mono); color: var(--muted); text-align: center; }
+
+/* Machines */
+.stat-row { display: flex; flex-wrap: wrap; gap: 4px 16px; font: 400 12.5px var(--f-mono); color: var(--muted); }
+.stat-row b { color: var(--fg); font-weight: 500; }
+
+.foot { margin-top: 32px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); max-width: 70ch; }
+
+/* Side sheet */
+.sheet { position: fixed; inset: 0; z-index: 30; display: flex; justify-content: flex-end; }
+.scrim { position: absolute; inset: 0; background: var(--scrim); }
+.panel {
+  position: relative;
+  width: min(600px, 100%);
+  height: 100%;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.panel form { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.panel-head {
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 12px;
+  border-bottom: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+}
+.panel-head h2 { font: 700 22px var(--f-display); letter-spacing: 0.06em; text-transform: uppercase; }
+.panel-body { padding: 16px; overflow-y: auto; flex: 1; display: grid; gap: 22px; align-content: start; }
+.panel-foot {
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.foot-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.foot-row .spacer { margin-right: auto; }
+.sec { display: grid; gap: 12px; }
+.sec > h3 { font: 600 15px var(--f-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.fld { display: grid; gap: 5px; min-width: 0; align-content: start; }
+.fld label, .fld legend, .lbl { font-size: 13px; font-weight: 600; padding: 0; }
+.fld .help { font-size: 12.5px; color: var(--muted); }
+fieldset.fld { border: 0; margin: 0; padding: 0; min-width: 0; }
+.seg { display: flex; position: relative; }
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.seg label {
+  flex: 1; text-align: center; padding: 9px 8px; border: 1px solid var(--line); font-size: 14px; font-weight: 500;
+  cursor: pointer; background: var(--surface);
+}
+.seg label:first-of-type { border-radius: 6px 0 0 6px; }
+.seg label:last-of-type { border-radius: 0 6px 6px 0; }
+.seg label + input + label { border-left: 0; }
+.seg input:checked + label { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+.photo-preview { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; } .photo-item { display:grid; gap:5px; width:100px; } .photo-item img { width:100px; height:80px; object-fit:cover; border:1px solid var(--line); border-radius:6px; }
+.note { padding: 10px 12px; border-radius: 6px; font-size: 14px; background: var(--rep-bg); color: var(--rep); }
+.note.info { background: var(--accent-soft); color: var(--fg); }
+.err { color: var(--rep); font-size: 14px; font-weight: 500; }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 50; max-width: min(90vw, 420px);
+  background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 14px;
+}
+.catalogue-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:12px; }
+.catalogue-card { min-width:0; transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease; }
+.catalogue-card:hover { transform:translateY(-2px); box-shadow:0 8px 22px rgba(27,54,82,.10); }
+.catalogue-card h3 { margin:12px 0 5px; }
+.catalogue-mark { font:500 11px var(--f-mono); letter-spacing:.12em; color:var(--accent); }
+.catalogue-card .btn { margin-top:10px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>DN Solutions · Machine Fix Log</h1>
+      <p class="sub">machine catalogue · faults · repeats · repairs</p>
+    </div>
+    <button type="button" class="btn primary" data-act="new" id="btnNew">+ Log a problem</button>
+  </header>
+
+  <section class="stats" id="stats" aria-label="Summary"></section>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Views"></nav>
+  <main id="view"></main>
+  <p class="foot" id="foot"></p>
+</div>
+
+<div class="sheet" id="sheet" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var CATS = ['Spindle', 'Axis / servo', 'Tool changer', 'Coolant', 'Lubrication', 'Hydraulic / pneumatic', 'Electrical', 'Controller / software', 'Chip conveyor', 'Door / safety', 'Other'];
+  var STATUSES = ['Open', 'In progress', 'Fixed'];
+  var VIA = ['Phone call', 'Remote', 'On-site visit'];
+  // Product family names below are based on DN Solutions' public official product lineup.
+  // Exact specifications vary by model/configuration; use the official catalog links for verified details.
+  var DNS_CATALOG = [
+    {category:'Turning Centers', name:'LEO 1600 series', detail:'Compact horizontal turning centers'},
+    {category:'Turning Centers', name:'Lynx 2000G/2100G series', detail:'Gang-type compact turning centers'},
+    {category:'Turning Centers', name:'Lynx 210/220/300 series', detail:'Compact turning centers'},
+    {category:'Turning Centers', name:'Lynx 2100/2600 series', detail:'High-performance compact turning centers'},
+    {category:'Turning Centers', name:'PUMA DNT series', detail:'Global-standard turning centers'},
+    {category:'Turning Centers', name:'PUMA GT series', detail:'Global-standard turning centers'},
+    {category:'Turning Centers', name:'PUMA 2100/2600/3100 series', detail:'Horizontal turning centers with Y-axis options'},
+    {category:'Turning Centers', name:'PUMA 4100/5100 series', detail:'Heavy-duty turning centers'},
+    {category:'Turning Centers', name:'PUMA 600/700/800 II series', detail:'High-capacity heavy-duty turning centers'},
+    {category:'Turning Centers', name:'PUMA 1000 series', detail:'Large-component heavy-duty turning centers'},
+    {category:'Turning Centers', name:'PUMA TL series', detail:'Multi-turret turning centers'},
+    {category:'Turning Centers', name:'PUMA TT series', detail:'Multi-turret turning centers'},
+    {category:'Turning Centers', name:'PUMA TW series', detail:'Twin-spindle turning centers'},
+    {category:'Turning Centers', name:'PV 6300 series', detail:'Vertical turning centers'},
+    {category:'Turning Centers', name:'PUMA V400 series', detail:'Vertical turning centers'},
+    {category:'Turning Centers', name:'PUMA VT series', detail:'Vertical turning centers'},
+    {category:'Turning Centers', name:'PUMA V8300/9300 series', detail:'Vertical turning centers'},
+    {category:'Turning Centers', name:'PUMA VTR series', detail:'Ram-type vertical turning centers'},
+    {category:'Turning Centers', name:'DNC series', detail:'Quartz grinding horizontal turning centers'},
+    {category:'Machining Centers', name:'DNM 4th', detail:'Vertical machining centers'},
+    {category:'Machining Centers', name:'DNM series', detail:'Vertical machining centers'},
+    {category:'Machining Centers', name:'DEM series', detail:'Vertical machining centers'},
+    {category:'Machining Centers', name:'BVM series', detail:'Vertical machining centers'},
+    {category:'Machining Centers', name:'SVM series', detail:'Vertical machining centers'},
+    {category:'Machining Centers', name:'Mynx II series', detail:'Vertical machining centers'},
+    {category:'Machining Centers', name:'VC series', detail:'Machining centers; configurations vary'},
+    {category:'Machining Centers', name:'VCF series', detail:'Vertical machining centers'},
+    {category:'Machining Centers', name:'VM 5400/6500 series', detail:'Vertical machining centers'},
+    {category:'Machining Centers', name:'XC 4000-2SP series', detail:'Two-spindle machining centers'},
+    {category:'Machining Centers', name:'VM series', detail:'Die-and-mold machining centers'},
+    {category:'Machining Centers', name:'NHP 2nd series', detail:'Horizontal machining centers'},
+    {category:'Machining Centers', name:'HC II series', detail:'Horizontal machining centers'},
+    {category:'Machining Centers', name:'NHC series', detail:'Horizontal machining centers'},
+    {category:'Machining Centers', name:'NHP series', detail:'Horizontal machining centers'},
+    {category:'Machining Centers', name:'NHM series', detail:'Horizontal machining centers'},
+    {category:'Machining Centers', name:'HM series', detail:'Horizontal machining centers'},
+    {category:'Machining Centers', name:'VX series', detail:'Non-metal machining centers'},
+    {category:'Boring Mills', name:'DBC series', detail:'Boring mills'},
+    {category:'Boring Mills', name:'DBD series', detail:'Duplex boring mills'},
+    {category:'Double Column Machining Centers', name:'BM series', detail:'Fixed-crossrail double-column machining centers'},
+    {category:'Double Column Machining Centers', name:'DBM-s series', detail:'Fixed-crossrail double-column machining centers'},
+    {category:'Double Column Machining Centers', name:'DBM series', detail:'W-axis crossrail double-column machining centers'},
+    {category:'Double Column Machining Centers', name:'DCM F series', detail:'W-axis crossrail double-column machining centers'},
+    {category:'Double Column Machining Centers', name:'BM U series', detail:'Five-axis double-column machining centers'},
+    {category:'Double Column Machining Centers', name:'DBM U series', detail:'Five-axis double-column machining centers'},
+    {category:'Double Column Machining Centers', name:'DCM U series', detail:'Five-axis double-column machining centers'},
+    {category:'Five-Axis Machines', name:'DVF series', detail:'Five-axis vertical machining centers'},
+    {category:'Five-Axis Machines', name:'DNM 5AX series', detail:'Five-axis vertical machining centers'},
+    {category:'Five-Axis Machines', name:'FM series', detail:'Five-axis vertical machining centers'},
+    {category:'Five-Axis Machines', name:'DHF 8000 series', detail:'Five-axis horizontal machining centers'},
+    {category:'Five-Axis Machines', name:'DHF 5500 series', detail:'Five-axis horizontal machining centers'},
+    {category:'Five-Axis Machines', name:'HFP 1540 series', detail:'Five-axis machining profiler'},
+    {category:'Multifunctional Machines', name:'SMX series', detail:'Multitasking turning centers'},
+    {category:'Multifunctional Machines', name:'DNX series', detail:'Multitasking turning centers'},
+    {category:'Additive Manufacturing', name:'DLX series', detail:'Powder-bed-fusion additive manufacturing'},
+    {category:'Specialized Machining', name:'FSW 2030 Series', detail:'Friction stir welding system'},
+    {category:'Tapping Centers', name:'T series', detail:'Tapping centers'}
+  ];
+  var LS_KEY = 'machine-fix-log-v1';
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  var S = { jobs: [], loaded: false, mode: 'pending', tab: 'jobs', q: '', status: 'all', cat: 'all', machine: '', urgent: false, editing: null, dbError: '' };
+  var SHOP_KEY = 'dns_shop_maintenance_v1';
+  var shopData = loadShopData();
+  function loadShopData(){ try { var x=JSON.parse(localStorage.getItem(SHOP_KEY)||'{}'); return {controllers:Array.isArray(x.controllers)?x.controllers:[],alarms:Array.isArray(x.alarms)?x.alarms:[],maintenance:Array.isArray(x.maintenance)?x.maintenance:[],downtime:Array.isArray(x.downtime)?x.downtime:[]}; } catch(e){ return {controllers:[],alarms:[],maintenance:[],downtime:[]}; } }
+  function saveShopData(){ try { localStorage.setItem(SHOP_KEY,JSON.stringify(shopData)); return true; } catch(e){ toast('Could not save. Browser storage may be full.'); return false; } }
+  function shopId(){ return 's'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+  var D = null;
+  var col = null;
+  var lastFocus = null;
+  var toastTimer = null;
+
+  function $(s, r) { return (r || document).querySelector(s); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function norm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function machineKey(j) { return norm(j.serial) || norm(j.machine); }
+  function problemKey(j) { return norm(j.problem); }
+  function p2(n) { return String(n).padStart(2, '0'); }
+  function nowLocal() {
+    var d = new Date();
+    return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+  }
+  function parse(s) { var d = new Date(s); return isNaN(d.getTime()) ? null : d; }
+  function fmtDate(s) { var d = s && parse(s); return d ? p2(d.getDate()) + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() : '—'; }
+  function fmtTime(s) {
+    var d = s && parse(s); if (!d) return '';
+    var h = d.getHours(), ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12;
+    return h + ':' + p2(d.getMinutes()) + ' ' + ap;
+  }
+  function fmtDT(s) { return s ? fmtDate(s) + ', ' + fmtTime(s) : '—'; }
+  function dur(ms) {
+    var m = Math.max(0, Math.round(ms / 60000));
+    if (m < 60) return m + ' min';
+    var h = Math.floor(m / 60);
+    if (h < 48) return h + ' h' + (m % 60 ? ' ' + (m % 60) + ' m' : '');
+    var d = Math.floor(h / 24);
+    return d + ' d' + (h % 24 ? ' ' + (h % 24) + ' h' : '');
+  }
+  function fixMs(j) {
+    if (j.status !== 'Fixed') return null;
+    var a = parse(j.reportedAt), b = parse(j.fixedAt);
+    return a && b && b >= a ? b - a : null;
+  }
+  function daysBetween(a, b) { var x = parse(a), y = parse(b); return x && y ? (y - x) / 86400000 : 0; }
+  function ord(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function newId() { return 'j' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  /* ---------- derived data ---------- */
+  function derive() {
+    var asc = S.jobs.slice().sort(function (a, b) {
+      return String(a.reportedAt || '').localeCompare(String(b.reportedAt || '')) || String(a.id).localeCompare(String(b.id));
+    });
+    var groups = new Map(), machines = new Map(), problems = new Map(), occ = {};
+    asc.forEach(function (j) {
+      var mk = machineKey(j), pk = problemKey(j), gk = mk + '|' + pk;
+      var g = groups.get(gk);
+      if (!g) { g = { key: gk, mk: mk, pk: pk, jobs: [] }; groups.set(gk, g); }
+      g.jobs.push(j);
+      occ[j.id] = { n: g.jobs.length, g: g };
+      var m = machines.get(mk);
+      if (!m) { m = { mk: mk, jobs: [], repeats: 0 }; machines.set(mk, m); }
+      m.jobs.push(j);
+      m.model = j.machine || m.model; m.serial = j.serial || m.serial; m.customer = j.customer || m.customer;
+      var p = problems.get(pk);
+      if (!p) { p = { pk: pk, count: 0, machines: new Set() }; problems.set(pk, p); }
+      p.count++; p.machines.add(mk); p.title = j.problem; p.category = j.category;
+    });
+    function lastOf(g) { return String(g.jobs[g.jobs.length - 1].reportedAt || ''); }
+    var repeatGroups = Array.from(groups.values()).filter(function (g) { return g.jobs.length >= 2; })
+      .sort(function (a, b) { return b.jobs.length - a.jobs.length || lastOf(b).localeCompare(lastOf(a)); });
+    repeatGroups.forEach(function (g) { var m = machines.get(g.mk); if (m) m.repeats++; });
+    var machineList = Array.from(machines.values()).sort(function (a, b) {
+      return String(b.jobs[b.jobs.length - 1].reportedAt || '').localeCompare(String(a.jobs[a.jobs.length - 1].reportedAt || ''));
+    });
+    var problemList = Array.from(problems.values()).sort(function (a, b) { return b.count - a.count || String(a.title).localeCompare(String(b.title)); });
+    return { asc: asc, groups: groups, repeatGroups: repeatGroups, machines: machines, machineList: machineList, problemList: problemList, occ: occ };
+  }
+
+  /* ---------- storage ---------- */
+  function lsLoad() { try { var r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : []; } catch (e) { return []; } }
+  function lsSave() { try { localStorage.setItem(LS_KEY, JSON.stringify(S.jobs)); } catch (e) { toast('Could not save on this device.'); } }
+  function writeError(e) {
+    if (e && e.code === 'quota_exceeded') return 'The log is full. Delete old records and try again.';
+    if (e && e.code === 'invalid_argument') return 'This page did not accept the change. If you only have view access, ask the owner for edit access.';
+    return 'Could not save. Check your connection and try again.';
+  }
+  var store = {
+    save: function (job) {
+      var id = job.id, data = {};
+      Object.keys(job).forEach(function (k) { if (k !== 'id') data[k] = job[k]; });
+      if (S.mode === 'db') return col.doc(id).set(data);
+      var i = S.jobs.findIndex(function (x) { return x.id === id; });
+      if (i >= 0) S.jobs[i] = job; else S.jobs.push(job);
+      lsSave(); renderAll(false);
+      return Promise.resolve();
+    },
+    remove: function (id) {
+      if (S.mode === 'db') return col.doc(id).delete();
+      S.jobs = S.jobs.filter(function (x) { return x.id !== id; });
+      lsSave(); renderAll(false);
+      return Promise.resolve();
+    }
+  };
+
+  /* ---------- toast ---------- */
+  function toast(msg) {
+    var t = $('#toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 3200);
+  }
+
+  /* ---------- summary, tabs, footer ---------- */
+  function renderStats() {
+    var open = S.jobs.filter(function (j) { return j.status !== 'Fixed'; }).length;
+    var fixed = S.jobs.length - open;
+    var ms = S.jobs.map(fixMs).filter(function (x) { return x != null; });
+    var avg = ms.length ? dur(ms.reduce(function (a, b) { return a + b; }, 0) / ms.length) : '—';
+    var rep = D.repeatGroups.length;
+    $('#stats').innerHTML =
+      '<div class="stat"><div class="k">Open now</div><div class="v">' + open + '</div></div>' +
+      '<div class="stat"><div class="k">Fixed</div><div class="v">' + fixed + '</div></div>' +
+      '<div class="stat"><div class="k">Repeat problems</div><div class="v' + (rep ? ' warn' : '') + '">' + rep + '</div></div>' +
+      '<div class="stat"><div class="k">Average fix time</div><div class="v">' + esc(avg) + '</div></div>';
+  }
+  function renderTabs() {
+    var tabs = [['jobs', 'Jobs', S.jobs.length], ['customers', 'Customers', uniq(S.jobs.map(function(j){return j.customer;}).filter(Boolean)).length], ['repeats', 'Repeats', D.repeatGroups.length], ['machines', 'Machines', D.machineList.length], ['catalogue', 'DN Solutions Catalogue', DNS_CATALOG.length], ['maintenance', 'Maintenance & CNC', shopData.maintenance.length+shopData.downtime.length], ['reports', 'Reports', '']];
+    $('#tabs').innerHTML = tabs.map(function (t) {
+      return '<button type="button" role="tab" class="tab" data-act="tab" data-tab="' + t[0] + '" aria-selected="' + (S.tab === t[0]) + '">' + t[1] + (t[2] === '' ? '' : '<span class="n">' + t[2] + '</span>') + '</button>';
+    }).join('');
+  }
+  function renderFoot() {
+    var m = S.mode, t = '';
+    if (S.dbError) t = 'Could not reach the saved records. Reload the page to try again.';
+    else if (m === 'db') t = 'Records are kept with this page, so they are still here when you reopen it on your phone or computer. Use Export CSV for a copy.';
+    else if (m === 'local') t = 'Records are saved in this browser only. Opening the page on another device will not show them. Use Export CSV for a copy.';
+    $('#foot').textContent = t;
+  }
+
+  /* ---------- views ---------- */
+  function renderAll(force) { D = derive(); renderStats(); renderTabs(); renderView(force); renderFoot(); }
+
+  function renderView(force) {
+    var v = $('#view');
+    if (!S.loaded) { v.innerHTML = '<div class="empty"><h3>Loading</h3><p>Getting your records.</p></div>'; return; }
+    if (S.tab === 'jobs') {
+      if (!force && $('#q', v)) { renderJobList(); return; }
+      v.innerHTML = jobsShell(); renderJobList();
+    } else if (S.tab === 'repeats') { v.innerHTML = repeatsHTML(); }
+    else if (S.tab === 'customers') { v.innerHTML = customersHTML(); }
+    else if (S.tab === 'machines') { v.innerHTML = machinesHTML(); }
+    else if (S.tab === 'catalogue') { v.innerHTML = catalogueHTML(); }
+    else if (S.tab === 'maintenance') { v.innerHTML = maintenanceHTML(); }
+    else { v.innerHTML = reportsHTML(); }
+  }
+
+  function jobsShell() {
+    var chips = [['all', 'All'], ['Open', 'Open'], ['In progress', 'In progress'], ['Fixed', 'Fixed']].map(function (c) {
+      return '<button type="button" class="chip" data-act="status" data-v="' + c[0] + '" aria-pressed="' + (S.status === c[0]) + '">' + c[1] + '</button>';
+    }).join('');
+    var mach = '';
+    if (S.machine) {
+      var m = D.machines.get(S.machine);
+      var label = m ? [m.model, m.serial].filter(Boolean).join(' · ') : S.machine;
+      mach = '<button type="button" class="chip machine" data-act="clearMachine">Machine: ' + esc(label) + ' &times;</button>';
+    }
+    var cats = '<option value="all">All categories</option>' + CATS.map(function (c) {
+      return '<option' + (S.cat === c ? ' selected' : '') + '>' + esc(c) + '</option>';
+    }).join('');
+    return '<div class="toolbar">' +
+      '<div class="grow"><label class="sr" for="q">Search records</label><input id="q" type="search" placeholder="Search machine, serial, problem, alarm code" value="' + esc(S.q) + '" autocomplete="off"></div>' +
+      '<div class="cat"><label class="sr" for="catSel">Category</label><select id="catSel">' + cats + '</select></div>' +
+      '</div><div class="chips" role="group" aria-label="Status">' + chips + '<button type="button" class="chip" data-act="urgent" aria-pressed="' + S.urgent + '">Urgent only</button>' + mach + '<button type="button" class="btn small" data-act="import">Import sheet / CSV</button><button type="button" class="btn small" data-act="export">Export CSV</button><input id="importFile" type="file" accept=".csv,text/csv,.tsv,text/tab-separated-values" hidden></div><div id="jobList"></div>';
+  }
+
+  function visibleJobs() {
+    var q = norm(S.q);
+    return S.jobs.filter(function (j) {
+      if (S.status !== 'all' && j.status !== S.status) return false;
+      if (S.cat !== 'all' && j.category !== S.cat) return false;
+      if (S.machine && machineKey(j) !== S.machine) return false;
+      if (S.urgent && j.priority !== 'Urgent') return false;
+      if (q) {
+        var hay = norm([j.machine, j.serial, j.customer, j.problem, j.category, j.code, j.what, j.cause, j.fix, j.parts].join(' '));
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    }).sort(function (a, b) { return String(b.reportedAt || '').localeCompare(String(a.reportedAt || '')); });
+  }
+
+  function jobCard(j) {
+    var info = D.occ[j.id] || { n: 1 };
+    var st = j.status === 'Fixed' ? 'fixed' : j.status === 'In progress' ? 'prog' : 'open';
+    var pills = '<span class="pill ' + st + '">' + esc(j.status) + '</span>';
+    if (j.priority === 'Urgent') pills = '<span class="pill urg">Urgent</span>' + pills;
+    if (info.n >= 2) pills += '<span class="pill rep">Repeat · ' + ord(info.n) + ' time</span>';
+    if (j.example) pills += '<span class="pill ex">Example</span>';
+    var meta = '<span>' + esc(j.machine) + '</span>' + (j.serial ? '<span class="sn">' + esc(j.serial) + '</span>' : '') + (j.customer ? '<span>' + esc(j.customer) + '</span>' : '') + (j.category ? '<span>' + esc(j.category) + '</span>' : '') + (j.via ? '<span>' + esc(j.via) + '</span>' : '');
+    var times = '<span>Reported <b>' + esc(fmtDT(j.reportedAt)) + '</b></span>';
+    if (j.status === 'Fixed') {
+      var ms = fixMs(j);
+      times += '<span>Fixed <b>' + esc(fmtDT(j.fixedAt)) + '</b></span>' + (ms != null ? '<span>Took <b>' + esc(dur(ms)) + '</b></span>' : '');
+    } else {
+      var r = parse(j.reportedAt);
+      if (r) times += '<span>Open for <b>' + esc(dur(Date.now() - r.getTime())) + '</b></span>';
+    }
+    var fix = j.fix ? '<p class="clamp"><b>Fix</b>' + esc(j.fix) + '</p>' : (j.what ? '<p class="clamp"><b>Issue</b>' + esc(j.what) + '</p>' : '');
+    return '<article class="card" role="button" tabindex="0" data-act="open" data-id="' + esc(j.id) + '">' +
+      '<div class="card-head"><h3>' + esc(j.problem) + '</h3><div class="pills">' + pills + '</div></div>' +
+      '<p class="meta">' + meta + '</p><p class="times">' + times + '</p>' + fix + '</article>';
+  }
+
+  function renderJobList() {
+    var box = $('#jobList'); if (!box) return;
+    var list = visibleJobs(), html = '';
+    var ex = S.jobs.filter(function (j) { return j.example; }).length;
+    if (ex) html += '<div class="banner"><span>These ' + ex + ' records are examples so you can see how the log works.</span><button type="button" class="btn small" data-act="removeExamples">Remove examples</button></div>';
+    if (!S.jobs.length) {
+      html += '<div class="empty"><h3>No problems logged yet</h3><p>Log each machine problem as it comes in: what broke, the alarm code, and when it was reported. When you fix it, add how you fixed it. If the same problem comes back on the same machine, it is counted on the Repeats tab.</p><button type="button" class="btn primary" data-act="new">Log your first problem</button></div>';
+    } else {
+      html += '<div class="list-head"><span class="count">' + list.length + (list.length === 1 ? ' record' : ' records') + '</span><button type="button" class="btn small ghost" data-act="export">Export CSV</button></div>';
+      if (!list.length) html += '<div class="empty"><h3>Nothing matches</h3><p>No record fits the search or filters.</p><button type="button" class="btn" data-act="clearFilters">Clear filters</button></div>';
+      else html += '<div class="list">' + list.map(jobCard).join('') + '</div>';
+    }
+    box.innerHTML = html;
+  }
+
+  function repGroupHTML(g) {
+    var jobs = g.jobs, last = jobs[jobs.length - 1], first = jobs[0];
+    var gaps = [];
+    for (var i = 1; i < jobs.length; i++) gaps.push(daysBetween(jobs[i - 1].reportedAt, jobs[i].reportedAt));
+    var avg = Math.round(gaps.reduce(function (a, b) { return a + b; }, 0) / gaps.length);
+    var avgTxt = avg < 1 ? 'Comes back within a day' : 'Comes back about every ' + avg + (avg === 1 ? ' day' : ' days');
+    var rows = jobs.map(function (j, idx) {
+      var txt;
+      if (j.status === 'Fixed') txt = j.fix || 'Fixed, no notes added';
+      else txt = (j.status === 'In progress' ? 'In progress' : 'Not fixed yet') + (j.fix ? ' · ' + j.fix : '');
+      var gap = idx ? '+' + Math.round(daysBetween(jobs[idx - 1].reportedAt, j.reportedAt)) + ' d' : 'first';
+      return '<li><button type="button" class="occ-btn" data-act="open" data-id="' + esc(j.id) + '"><span class="d">' + esc(fmtDate(j.reportedAt)) + '</span><span class="o-txt">' + esc(txt) + '</span><span class="gap">' + gap + '</span></button></li>';
+    }).join('');
+    var meta = '<span>' + esc(last.machine) + '</span>' + (last.serial ? '<span class="sn">' + esc(last.serial) + '</span>' : '') + (last.customer ? '<span>' + esc(last.customer) + '</span>' : '');
+    return '<article class="card"><div class="card-head"><h3>' + esc(last.problem) + '</h3><span class="count-badge">' + jobs.length + '&times;</span></div>' +
+      '<p class="meta">' + meta + '</p><ol class="occ">' + rows + '</ol>' +
+      '<p class="avg"><b>' + avgTxt + '.</b> First seen ' + esc(fmtDate(first.reportedAt)) + ', last ' + esc(fmtDate(last.reportedAt)) + '.</p>' +
+      '<div><button type="button" class="btn small" data-act="again" data-gk="' + esc(g.key) + '">Log it again</button></div></article>';
+  }
+
+  function repeatsHTML() {
+    var h = '<section class="block"><h2>Same problem, same machine</h2><p class="hint">A problem counts as a repeat when the same problem name is logged on the same machine (matched by serial number) more than once.</p>';
+    if (!D.repeatGroups.length) h += '<div class="empty"><h3>No repeats yet</h3><p>When the same problem is logged twice on one machine, it shows up here with every date, how it was fixed each time, and how often it comes back.</p></div>';
+    else h += '<div class="list">' + D.repeatGroups.map(repGroupHTML).join('') + '</div>';
+    h += '</section>';
+    if (D.problemList.length) {
+      var top = D.problemList.slice(0, 8), max = top[0].count;
+      h += '<section class="block"><h2>Most common problems</h2><p class="hint">Across all machines.</p><div class="bars">' + top.map(function (p) {
+        var n = p.machines.size;
+        return '<div class="bar-row"><div class="bar-top"><span>' + esc(p.title) + '</span><span class="c">' + p.count + '&times; · ' + n + (n === 1 ? ' machine' : ' machines') + '</span></div><div class="bar"><i style="width:' + Math.max(4, Math.round(p.count / max * 100)) + '%"></i></div></div>';
+      }).join('') + '</div></section>';
+    }
+    return h;
+  }
+
+  function customersHTML() {
+    var groups = {};
+    S.jobs.forEach(function(j){ var name=(j.customer || 'Customer not recorded').trim(); (groups[name]||(groups[name]=[])).push(j); });
+    var names=Object.keys(groups).sort(function(a,b){return a.localeCompare(b);});
+    if(!names.length) return '<div class="empty"><h3>No customer records yet</h3><p>Add a customer or site to a repair record to see it here.</p></div>';
+    return '<div class="list-head"><h2>Customer-wise records</h2><span class="count">'+names.length+' customers / sites</span></div><div class="list">'+names.map(function(name){
+      var jobs=groups[name].slice().sort(function(a,b){return String(b.reportedAt||'').localeCompare(String(a.reportedAt||''));});
+      var open=jobs.filter(function(j){return j.status!=='Fixed';}).length;
+      return '<section class="card"><div class="card-head"><h3>'+esc(name)+'</h3><div class="pills"><span class="pill ex">'+jobs.length+' jobs</span>'+(open?'<span class="pill open">'+open+' open</span>':'<span class="pill fixed">All fixed</span>')+'</div></div>'+jobs.slice(0,8).map(function(j){return '<button type="button" class="occ-btn" data-act="open" data-id="'+esc(j.id)+'"><span class="d">'+esc(fmtDate(j.reportedAt))+'</span><span class="o-txt">'+esc(j.problem||'Problem not named')+' · '+esc(j.machine||'')+'</span><span class="gap">'+esc(j.status||'Open')+'</span></button>';}).join('')+(jobs.length>8?'<p class="help">Showing latest 8 of '+jobs.length+' records.</p>':'')+'</section>';
+    }).join('')+'</div>';
+  }
+
+  function machinesHTML() {
+    if (!D.machineList.length) return '<div class="empty"><h3>No machines yet</h3><p>Machines appear here once you log a problem. Each one shows how many jobs and repeats it has had.</p></div>';
+    return '<div class="list">' + D.machineList.map(function (m) {
+      var last = m.jobs[m.jobs.length - 1];
+      var open = m.jobs.filter(function (j) { return j.status !== 'Fixed'; }).length;
+      var meta = (m.serial ? '<span class="sn">' + esc(m.serial) + '</span>' : '') + (m.customer ? '<span>' + esc(m.customer) + '</span>' : '');
+      return '<article class="card" role="button" tabindex="0" data-act="machine" data-mk="' + esc(m.mk) + '">' +
+        '<div class="card-head"><h3>' + esc(m.model || m.serial) + '</h3>' + (open ? '<div class="pills"><span class="pill open">' + open + ' open</span></div>' : '') + '</div>' +
+        '<p class="meta">' + meta + '</p>' +
+        '<p class="stat-row"><span>Jobs <b>' + m.jobs.length + '</b></span><span>Repeat problems <b>' + m.repeats + '</b></span></p>' +
+        '<p class="clamp"><b>Last</b>' + esc(fmtDate(last.reportedAt)) + ' · ' + esc(last.problem) + '</p></article>';
+    }).join('') + '</div>';
+  }
+
+  function catalogueHTML() {
+    var cats = uniq(DNS_CATALOG.map(function(x){return x.category;}));
+    var grouped = {};
+    DNS_CATALOG.forEach(function(x){ (grouped[x.category]||(grouped[x.category]=[])).push(x); });
+    var h = '<section class="block"><div class="list-head"><div><h2>DN Solutions machine catalogue</h2><p class="hint">Public product-family index for maintenance records. This is a family-level list, not a complete technical specification database.</p></div><span class="count">'+DNS_CATALOG.length+' families</span></div>' +
+      '<div class="field" style="margin:12px 0"><label for="catalogueSearch">Search model or machine type</label><input id="catalogueSearch" type="search" placeholder="e.g. DNM, PUMA, horizontal, five-axis" autocomplete="off"></div>' +
+      '<div class="chips" style="margin-bottom:14px"><button type="button" class="chip" data-act="catalogueFilter" data-cat="all" aria-pressed="true">All families</button>' + cats.map(function(c){return '<button type="button" class="chip" data-act="catalogueFilter" data-cat="'+esc(c)+'" aria-pressed="false">'+esc(c)+'</button>';}).join('') + '</div><div id="catalogueResults" class="catalogue-grid">';
+    h += DNS_CATALOG.map(function(x){return '<article class="card catalogue-card" data-catalogue="'+esc(norm(x.name+' '+x.category+' '+x.detail))+'" data-catalogue-cat="'+esc(x.category)+'"><div class="card-head"><span class="pill ex">'+esc(x.category)+'</span><span class="catalogue-mark">DNS</span></div><h3>'+esc(x.name)+'</h3><p class="meta">'+esc(x.detail)+'</p><button type="button" class="btn small" data-act="useCatalogMachine" data-model="'+esc(x.name)+'">+ Log fault for this family</button></article>';}).join('');
+    h += '</div><p class="help" style="margin-top:12px">For exact travels, spindle power, tool capacity, controller, alarm meanings, service procedures, and specifications, verify the exact model and configuration in the official documentation.</p><p><a href="https://dn-solutions.com/global/product/summary.do" target="_blank" rel="noopener noreferrer">Open official DN Solutions product lineup ↗</a></p></section>';
+    return h;
+  }
+
+  function reportsHTML() {
+    if (!S.jobs.length) return '<div class="empty"><h3>No reports yet</h3><p>Once you have logged some problems, this tab shows jobs per month, which categories break most, how long fixes take, and your slowest repairs.</p></div>';
+    var months = [], now = new Date();
+    for (var i = 5; i >= 0; i--) {
+      var x = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ key: x.getFullYear() + '-' + p2(x.getMonth() + 1), label: MONTHS[x.getMonth()] + ' ' + String(x.getFullYear()).slice(2), n: 0 });
+    }
+    S.jobs.forEach(function (j) { var k = String(j.reportedAt || '').slice(0, 7); months.forEach(function (m) { if (m.key === k) m.n++; }); });
+    var mx = Math.max.apply(null, months.map(function (m) { return m.n; })) || 1;
+    var h = '<section class="block"><h2>Jobs per month</h2><p class="hint">Problems reported in the last 6 months.</p>' +
+      '<div class="cols" style="height:150px">' + months.map(function (m) { return '<div class="col"><span class="cn">' + m.n + '</span><i style="height:' + Math.max(2, Math.round(m.n / mx * 100)) + 'px"></i></div>'; }).join('') + '</div>' +
+      '<div class="cols-l">' + months.map(function (m) { return '<span>' + esc(m.label) + '</span>'; }).join('') + '</div></section>';
+
+    var cats = {};
+    S.jobs.forEach(function (j) {
+      var c = j.category || 'Other', o = cats[c] || (cats[c] = { c: c, n: 0, ms: [] });
+      o.n++; var ms = fixMs(j); if (ms != null) o.ms.push(ms);
+    });
+    var cl = Object.keys(cats).map(function (k) { return cats[k]; }).sort(function (a, b) { return b.n - a.n || a.c.localeCompare(b.c); });
+    var cmax = cl[0].n;
+    h += '<section class="block"><h2>By category</h2><p class="hint">Which parts of the machine cause the most calls, and how long fixes take.</p><div class="bars">' + cl.map(function (o) {
+      var avg = o.ms.length ? ' · avg fix ' + dur(o.ms.reduce(function (a, b) { return a + b; }, 0) / o.ms.length) : '';
+      return '<div class="bar-row"><div class="bar-top"><span>' + esc(o.c) + '</span><span class="c">' + o.n + '&times;' + esc(avg) + '</span></div><div class="bar"><i style="width:' + Math.max(4, Math.round(o.n / cmax * 100)) + '%"></i></div></div>';
+    }).join('') + '</div></section>';
+
+    var via = {};
+    S.jobs.forEach(function (j) { var k = j.via || 'Not recorded'; via[k] = (via[k] || 0) + 1; });
+    h += '<section class="block"><h2>How you handled them</h2><p class="stat-row">' + Object.keys(via).map(function (k) { return '<span>' + esc(k) + ' <b>' + via[k] + '</b></span>'; }).join('') + '</p></section>';
+
+    var slow = S.jobs.filter(function (j) { return fixMs(j) != null; }).sort(function (a, b) { return fixMs(b) - fixMs(a); }).slice(0, 5);
+    if (slow.length) {
+      h += '<section class="block"><h2>Slowest fixes</h2><ol class="occ">' + slow.map(function (j) {
+        return '<li><button type="button" class="occ-btn" data-act="open" data-id="' + esc(j.id) + '"><span class="d">' + esc(fmtDate(j.reportedAt)) + '</span><span class="o-txt">' + esc(j.problem) + ' · ' + esc(j.machine) + '</span><span class="gap">' + esc(dur(fixMs(j))) + '</span></button></li>';
+      }).join('') + '</ol></section>';
+    }
+    return h;
+  }
+
+  /* ---------- record form ---------- */
+  function uniq(arr) { var seen = {}, out = []; arr.forEach(function (x) { var k = norm(x); if (x && !seen[k]) { seen[k] = 1; out.push(x); } }); return out; }
+  function dl(id, items) { return '<datalist id="' + id + '">' + items.map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>'; }
+
+  function sheetHTML(job, pre, title) {
+    var v = job || pre || {};
+    var status = job ? job.status : 'Open';
+    var reported = job ? job.reportedAt : nowLocal();
+    var models = uniq(D.asc.map(function (j) { return j.machine; }).reverse());
+    var serials = uniq(D.asc.map(function (j) { return j.serial; }).reverse());
+    var custs = uniq(D.asc.map(function (j) { return j.customer; }).reverse());
+    var probs = uniq(D.asc.map(function (j) { return j.problem; }).reverse());
+    var cats = CATS.map(function (c) { return '<option' + ((v.category || 'Other') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('');
+    var seg = STATUSES.map(function (s, i) {
+      return '<input type="radio" name="status" id="f-st-' + i + '" value="' + s + '"' + (s === status ? ' checked' : '') + '><label for="f-st-' + i + '">' + s + '</label>';
+    }).join('');
+    var pri = ['Normal', 'Urgent'].map(function (s, i) {
+      return '<input type="radio" name="priority" id="f-pr-' + i + '" value="' + s + '"' + (s === ((job && job.priority) || 'Normal') ? ' checked' : '') + '><label for="f-pr-' + i + '">' + s + '</label>';
+    }).join('');
+    var viaOpts = '<option value="">Not recorded</option>' + VIA.map(function (x) { return '<option' + (job && job.via === x ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('');
+    var del = job ?'<button type="button" class="btn spacer" data-act="delAsk">Delete</button>' : '<span class="spacer"></span>';
+    return '<div class="scrim" data-act="close"></div>' +
+      '<section class="panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><form id="jobForm" novalidate>' +
+      '<div class="panel-head"><h2 id="sheetTitle">' + esc(title) + '</h2><button type="button" class="btn small ghost" data-act="close">Close</button></div>' +
+      '<div class="panel-body">' +
+      '<div class="sec"><h3>Machine</h3><div class="row">' +
+      '<div class="fld"><label for="f-machine">Machine model</label><input id="f-machine" list="dl-models" value="' + esc(v.machine) + '" placeholder="e.g. DNM 5700" autocomplete="off"></div>' +
+      '<div class="fld"><label for="f-serial">Serial number</label><input id="f-serial" class="mono-in" list="dl-serials" value="' + esc(v.serial) + '" placeholder="Machine serial no." autocomplete="off"><span class="help">Add it so repeats are counted on the same machine.</span></div></div>' +
+      '<div class="fld"><label for="f-customer">Customer or site</label><input id="f-customer" list="dl-custs" value="' + esc(v.customer) + '" autocomplete="off"></div>' +
+      dl('dl-models', models) + dl('dl-serials', serials) + dl('dl-custs', custs) + dl('dl-probs', probs) + '</div>' +
+      '<div class="sec"><h3>Problem</h3>' +
+      '<div class="fld"><label for="f-problem">What is the problem?</label><input id="f-problem" list="dl-probs" value="' + esc(v.problem) + '" placeholder="Short name, e.g. Tool changer arm stuck" autocomplete="off"><span class="help">Use the same wording each time so repeats are counted. Pick from the list when it appears.</span></div>' +
+      '<div id="repeatHint"></div>' +
+      '<div class="row"><div class="fld"><label for="f-category">Category</label><select id="f-category">' + cats + '</select></div>' +
+      '<div class="fld"><label for="f-code">Alarm or error code</label><input id="f-code" class="mono-in" value="' + esc(v.code) + '" autocomplete="off"></div></div>' +
+      '<fieldset class="fld"><legend>Priority</legend><div class="seg">' + pri + '</div></fieldset>' +
+      '<div class="fld"><label for="f-what">How it broke, what the customer saw</label><textarea id="f-what" placeholder="Symptoms, when it happens, what the operator was doing">' + esc(v.what) + '</textarea></div>' +
+      '<div class="fld"><label for="f-reported">Reported on</label><input id="f-reported" type="datetime-local" value="' + esc(reported) + '"></div></div>' +
+      '<div class="sec"><h3>Fix</h3>' +
+      '<fieldset class="fld"><legend>Status</legend><div class="seg">' + seg + '</div></fieldset>' +
+      '<div class="fld" id="fixedWrap"' + (status === 'Fixed' ? '' : ' hidden') + '><label for="f-fixed">Fixed on</label><input id="f-fixed" type="datetime-local" value="' + esc(job ? job.fixedAt : '') + '"></div>' +
+      '<div class="fld"><label for="f-via">How you handled it</label><select id="f-via">' + viaOpts + '</select></div>' +
+      '<div class="fld"><label for="f-cause">Cause, if known</label><input id="f-cause" value="' + esc(job ? job.cause : '') + '" autocomplete="off"></div>' +
+      '<div class="fld"><label for="f-fix">How you fixed it</label><textarea id="f-fix" placeholder="Steps you took, settings changed, tests you ran">' + esc(job ? job.fix : '') + '</textarea></div>' +
+      '<div class="fld"><label for="f-parts">Parts used</label><input id="f-parts" value="' + esc(job ? job.parts : '') + '" autocomplete="off"></div>' +
+      '<div class="row"><div class="fld"><label for="f-warranty">Warranty status</label><select id="f-warranty"><option value="Not checked"'+((!job || !job.warranty || job.warranty==='Not checked')?' selected':'')+'>Not checked</option><option value="In warranty"'+(job&&job.warranty==='In warranty'?' selected':'')+'>In warranty</option><option value="Out of warranty"'+(job&&job.warranty==='Out of warranty'?' selected':'')+'>Out of warranty</option><option value="Warranty claim raised"'+(job&&job.warranty==='Warranty claim raised'?' selected':'')+'>Warranty claim raised</option><option value="Warranty rejected"'+(job&&job.warranty==='Warranty rejected'?' selected':'')+'>Warranty rejected</option></select></div><div class="fld"><label for="f-warrantyEnd">Warranty expiry date</label><input id="f-warrantyEnd" type="date" value="'+esc(job?job.warrantyEnd:'')+'"></div></div>' +
+      '<div class="fld"><label for="f-photos">Fault photos</label><input id="f-photos" type="file" accept="image/*" multiple><span class="help">Photos are resized before saving. Up to 4 images per record.</span><div id="photoPreview" class="photo-preview">'+((job&&job.photos)||[]).map(function(src,i){return '<span class="photo-item"><img src="'+esc(src)+'" alt="Fault photo '+(i+1)+'"><button type="button" class="btn small" data-act="removePhoto" data-index="'+i+'">Remove</button></span>';}).join('')+'</div></div></div>' +
+      '</div>' +
+      '<div class="panel-foot"><div id="formErr" class="err" role="alert" hidden></div>' +
+      '<div class="foot-row" id="normalRow">' + del + '<button type="button" class="btn" data-act="close">Cancel</button><button type="submit" class="btn primary" id="btnSave">Save</button></div>' +
+      '<div class="foot-row" id="delRow" hidden><span class="spacer">Delete this record for good?</span><button type="button" class="btn" data-act="delCancel">Keep it</button><button type="button" class="btn danger" data-act="delYes">Yes, delete</button></div>' +
+      '</div></form></section>';
+  }
+
+  function openSheet(id, pre, title) {
+    var job = id ? S.jobs.find(function (j) { return j.id === id; }) : null;
+    if (id && !job) return;
+    S.editing = job ? job.id : 'new';
+    S.formPhotos = (job && job.photos ? job.photos.slice() : []);
+    lastFocus = document.activeElement;
+    var sh = $('#sheet');
+    sh.innerHTML = sheetHTML(job, pre, title || (job ? 'Edit record' : 'Log a problem'));
+    sh.hidden = false;
+    document.documentElement.style.overflow = 'hidden';
+    updateHint();
+    setTimeout(function () { var f = $(job ? '#f-fix' : '#f-machine'); if (f) f.focus(); }, 30);
+  }
+  function closeSheet() {
+    var sh = $('#sheet'); sh.hidden = true; sh.innerHTML = ''; S.editing = null;
+    document.documentElement.style.overflow = '';
+    if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) {} }
+  }
+
+  function updateHint() {
+    var box = $('#repeatHint'); if (!box) return;
+    var mk = norm($('#f-serial').value) || norm($('#f-machine').value), pk = norm($('#f-problem').value);
+    if (!mk || !pk) { box.innerHTML = ''; return; }
+    var prior = S.jobs.filter(function (j) { return j.id !== S.editing && machineKey(j) === mk && problemKey(j) === pk; });
+    if (!prior.length) { box.innerHTML = ''; return; }
+    prior.sort(function (a, b) { return String(b.reportedAt).localeCompare(String(a.reportedAt)); });
+    var n = prior.length;
+    box.innerHTML = '<div class="note">This problem was logged ' + n + (n === 1 ? ' time' : ' times') + ' before on this machine. Last on ' + esc(fmtDate(prior[0].reportedAt)) + '. This one is the ' + ord(n + 1) + ' time.</div>';
+  }
+
+  function showErr(msg) { var e = $('#formErr'); if (!e) return; e.textContent = msg; e.hidden = !msg; }
+
+  async function saveForm() {
+    var g = function (id) { return ($('#' + id).value || '').trim(); };
+    var status = $('input[name="status"]:checked').value;
+    var data = {
+      machine: g('f-machine'), serial: g('f-serial'), customer: g('f-customer'), problem: g('f-problem'),
+      category: $('#f-category').value, code: g('f-code'), what: g('f-what'),
+      reportedAt: $('#f-reported').value, status: status, fixedAt: status === 'Fixed' ? $('#f-fixed').value : '',
+      cause: g('f-cause'), fix: g('f-fix'), parts: g('f-parts'),
+      priority: $('input[name="priority"]:checked').value, via: $('#f-via').value, warranty: $('#f-warranty').value, warrantyEnd: g('f-warrantyEnd'), photos: (S.formPhotos || []).slice()
+    };
+    if (!data.machine) { showErr('Enter the machine model.'); $('#f-machine').focus(); return; }
+    if (!data.problem) { showErr('Enter what the problem is.'); $('#f-problem').focus(); return; }
+    if (!parse(data.reportedAt)) { showErr('Enter the date and time it was reported.'); $('#f-reported').focus(); return; }
+    if (status === 'Fixed') {
+      if (!parse(data.fixedAt)) { showErr('Enter when it was fixed.'); $('#f-fixed').focus(); return; }
+      if (parse(data.fixedAt) < parse(data.reportedAt)) { showErr('The fixed time is before the reported time. Check both dates.'); $('#f-fixed').focus(); return; }
+    }
+    showErr('');
+    var old = S.editing && S.editing !== 'new' ? S.jobs.find(function (j) { return j.id === S.editing; }) : null;
+    var nowIso = new Date().toISOString();
+    var job = Object.assign({}, data, { id: old ? old.id : newId(), createdAt: old && old.createdAt ? old.createdAt : nowIso, updatedAt: nowIso, example: false });
+    var btn = $('#btnSave'); btn.disabled = true;
+    try { await store.save(job); closeSheet(); toast('Saved'); }
+    catch (e) { btn.disabled = false; showErr(writeError(e)); }
+  }
+
+  async function deleteCurrent() {
+    var id = S.editing; if (!id || id === 'new') return;
+    try { await store.remove(id); closeSheet(); toast('Record deleted'); }
+    catch (e) { showErr(writeError(e)); $('#delRow').hidden = true; $('#normalRow').hidden = false; }
+  }
+
+  async function removeExamples() {
+    var ids = S.jobs.filter(function (j) { return j.example; }).map(function (j) { return j.id; });
+    try { for (var i = 0; i < ids.length; i++) await store.remove(ids[i]); toast('Examples removed'); }
+    catch (e) { toast(writeError(e)); }
+  }
+
+  /* ---------- export ---------- */
+  function csvCell(v) { v = String(v == null ? '' : v); return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  async function exportCSV() {
+    var head = ['Reported', 'Status', 'Machine', 'Serial', 'Customer', 'Category', 'Problem', 'Alarm code', 'What happened', 'Cause', 'How fixed', 'Parts used', 'Fixed on', 'Time to fix', 'Time this problem on this machine', 'Priority', 'Handled via', 'Warranty status', 'Warranty expiry'];
+    var lines = [head.map(csvCell).join(',')];
+    D.asc.slice().reverse().forEach(function (j) {
+      var ms = fixMs(j), o = D.occ[j.id];
+      lines.push([fmtDT(j.reportedAt), j.status, j.machine, j.serial, j.customer, j.category, j.problem, j.code, j.what, j.cause, j.fix, j.parts,
+        j.fixedAt ? fmtDT(j.fixedAt) : '', ms != null ? dur(ms) : '', o ? o.n : 1, j.priority || 'Normal', j.via || '', j.warranty || 'Not checked', j.warrantyEnd || ''].map(csvCell).join(','));
+    });
+    var csv = '﻿' + lines.join('\r\n');
+    var d = null;
+    try { if (window.claude && window.claude.use) d = await window.claude.use('downloads'); } catch (e) { d = null; }
+    if (d) {
+      try { await d.save({ filename: 'machine-fix-log.csv', data: csv }); toast('Export ready'); }
+      catch (e) { if (!e || e.code !== 'declined') toast('Could not create the file.'); }
+      return;
+    }
+    try { await navigator.clipboard.writeText(csv); toast('Copied the records as CSV text'); }
+    catch (e) { toast('Export is not available here.'); }
+  }
+
+  function parseCSV(text) {
+    var rows=[], row=[], cell='', quoted=false;
+    for(var i=0;i<text.length;i++){var c=text[i]; if(quoted){if(c==='"'&&text[i+1]==='"'){cell+='"';i++;}else if(c==='"')quoted=false;else cell+=c;}else{if(c==='"')quoted=true;else if(c===','){row.push(cell);cell='';}else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell='';}else if(c!=='\r')cell+=c;}}
+    row.push(cell); if(row.some(function(x){return x!=='';}))rows.push(row); return rows;
+  }
+  function importCSVFile(file) {
+    var reader=new FileReader(); reader.onload=async function(){
+      try{
+        var rows=parseCSV(String(reader.result||'')); if(rows.length<2) throw new Error('The sheet has no data rows.');
+        var heads=rows.shift().map(function(x){return norm(x).replace(/ /g,'');});
+        function colVal(obj,keys){for(var i=0;i<keys.length;i++){var ix=heads.indexOf(keys[i]);if(ix>=0&&obj[ix]!=null)return String(obj[ix]).trim();}return '';}
+        var imported=0, skipped=0;
+        for(var r=0;r<rows.length;r++){var a=rows[r]; if(!a.some(function(x){return String(x).trim();}))continue;
+          var reported=colVal(a,['reported','reportedon','date','datetime','reportedat']);
+          var status=colVal(a,['status'])||'Open'; if(['Open','In progress','Fixed'].indexOf(status)<0)status='Open';
+          var machine=colVal(a,['machine','machinemodel','model']); var problem=colVal(a,['problem','fault','issue','description']);
+          if(!machine||!problem){skipped++;continue;}
+          var parsedDate=parse(reported); var reportedAt=parsedDate?nowLocalFromDate(parsedDate):nowLocal();
+          var fixedRaw=colVal(a,['fixedon','fixedat','fixeddate']); var fixedDate=parse(fixedRaw); var fixedAt=status==='Fixed'?(fixedDate?nowLocalFromDate(fixedDate):reportedAt):'';
+          var j={id:newId(),machine:machine,serial:colVal(a,['serial','serialnumber','machineserial']),customer:colVal(a,['customer','customerorsite','site']),category:colVal(a,['category'])||'Other',problem:problem,code:colVal(a,['alarmcode','code','errorcode']),what:colVal(a,['whathappened','symptoms','details']),reportedAt:reportedAt,status:status,fixedAt:fixedAt,cause:colVal(a,['cause']),fix:colVal(a,['howfixed','fix','repair']),parts:colVal(a,['partsused','parts']),priority:colVal(a,['priority'])||'Normal',via:colVal(a,['handledvia','via']),warranty:colVal(a,['warrantystatus','warranty'])||'Not checked',warrantyEnd:colVal(a,['warrantyexpiry','warrantyend']),photos:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),example:false};
+          try{await store.save(j);imported++;}catch(e){throw e;}
+        }
+        renderAll(true); toast('Imported '+imported+' records'+(skipped?' · skipped '+skipped+' incomplete rows':''));
+      }catch(e){toast('Import failed: '+(e.message||'check the CSV columns'));}
+    }; reader.readAsText(file);
+  }
+  function nowLocalFromDate(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+'T'+p2(d.getHours())+':'+p2(d.getMinutes());}
+  function resizePhoto(file){return new Promise(function(resolve,reject){var rd=new FileReader();rd.onerror=reject;rd.onload=function(){var im=new Image();im.onerror=reject;im.onload=function(){var scale=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*scale);c.height=Math.round(im.height*scale);c.getContext('2d').drawImage(im,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',0.72));};im.src=rd.result;};rd.readAsDataURL(file);});}
+
+
+  function maintenanceHTML(){
+    var h='<section class="block"><div class="list-head"><div><h2>Maintenance & CNC tools</h2><p class="hint">Keep controller details, verified alarm notes, preventive maintenance, and downtime records together. Alarm meanings are user-maintained and should be checked against the exact machine/controller manual.</p></div></div>';
+    h+='<div class="maint-grid"><form class="maint-card" data-shopform="controller"><h3>🎛 Controller / machine profile</h3><label>Machine model <input name="machine" required placeholder="e.g. DNM 5700"></label><label>Serial / asset number <input name="serial" placeholder="Machine serial number"></label><label>Controller <select name="controller"><option>Fanuc</option><option>Mitsubishi</option><option>Siemens</option><option>Other</option><option>Unknown</option></select></label><label>Controller model / version <input name="version" placeholder="e.g. exact control series"></label><label>Notes <textarea name="notes" rows="2" placeholder="Axis configuration, options, verified manual reference..."></textarea></label><button class="btn primary" type="submit">Save machine profile</button></form>';
+    h+='<form class="maint-card" data-shopform="alarm"><h3>⚠️ Verified alarm note</h3><label>Machine / model <input name="machine" required placeholder="Machine model or serial"></label><label>Controller <select name="controller"><option>Fanuc</option><option>Mitsubishi</option><option>Siemens</option><option>Other</option><option>Unknown</option></select></label><label>Alarm / error code <input name="code" required placeholder="Enter exact code"></label><label>Meaning / symptoms <textarea name="meaning" rows="2" required placeholder="Use the machine manual or verified service note"></textarea></label><label>Checked against <input name="source" placeholder="Manual title, section, revision"></label><button class="btn primary" type="submit">Save alarm note</button></form>';
+    h+='<form class="maint-card" data-shopform="maintenance"><h3>🗓 Preventive maintenance</h3><label>Machine / model <input name="machine" required placeholder="Machine model or serial"></label><label>Task <input name="task" required placeholder="e.g. inspect coolant concentration"></label><label>Interval <select name="interval"><option>Daily</option><option>Weekly</option><option>Monthly</option><option>Every 3 months</option><option>Every 6 months</option><option>Yearly</option><option>Based on running hours</option></select></label><label>Next due date <input name="due" type="date"></label><label>Owner / technician <input name="owner" placeholder="Assigned person"></label><button class="btn primary" type="submit">Add maintenance task</button></form>';
+    h+='<form class="maint-card" data-shopform="downtime"><h3>⏱ Downtime record</h3><label>Machine / model <input name="machine" required placeholder="Machine model or serial"></label><label>Start date & time <input name="start" type="datetime-local" required></label><label>End date & time <input name="end" type="datetime-local"></label><label>Reason / fault <input name="reason" required placeholder="Short downtime reason"></label><label>Alarm code (if any) <input name="code" placeholder="Exact alarm code"></label><label>Notes <textarea name="notes" rows="2" placeholder="Action taken, parts, shift impact..."></textarea></label><button class="btn primary" type="submit">Save downtime</button></form></div></section>';
+    h+='<section class="block"><div class="list-head"><div><h2>Saved machine data</h2><p class="hint">Saved in this browser. Export your main repair log regularly and keep a separate backup of this maintenance data.</p></div></div>';
+    h+='<h3>Machine profiles ('+shopData.controllers.length+')</h3>'+shopList(shopData.controllers,'controller',function(x){return '<b>'+esc(x.machine)+'</b> <span class="pill">'+esc(x.controller)+'</span><p class="hint">Serial: '+esc(x.serial||'Not entered')+' · '+esc(x.version||'')+'</p><p>'+esc(x.notes||'')+'</p>';});
+    h+='<h3>Alarm notes ('+shopData.alarms.length+')</h3>'+shopList(shopData.alarms,'alarm',function(x){return '<b>'+esc(x.machine)+' · <span class="mono">'+esc(x.code)+'</span></b> <span class="pill">'+esc(x.controller)+'</span><p>'+esc(x.meaning)+'</p><p class="hint">Verified against: '+esc(x.source||'Not specified')+'</p>';});
+    h+='<h3>Maintenance tasks ('+shopData.maintenance.length+')</h3>'+shopList(shopData.maintenance,'maintenance',function(x){return '<b>'+esc(x.machine)+' · '+esc(x.task)+'</b><p class="hint">'+esc(x.interval)+' · Due: '+esc(x.due||'Not scheduled')+' · Owner: '+esc(x.owner||'Unassigned')+'</p>';});
+    h+='<h3>Downtime history ('+shopData.downtime.length+')</h3>'+shopList(shopData.downtime,'downtime',function(x){var mins=0;if(x.start&&x.end){mins=Math.max(0,(new Date(x.end)-new Date(x.start))/60000);}return '<b>'+esc(x.machine)+' · '+esc(x.reason)+'</b><p class="hint">Start: '+esc(x.start||'')+' · End: '+esc(x.end||'Ongoing')+(mins?' · Duration: '+dur(mins*60000):'')+'</p><p>Alarm: '+esc(x.code||'None')+' · '+esc(x.notes||'')+'</p>';});
+    h+='<div class="row-actions"><button class="btn small" type="button" data-act="shopExport">Export maintenance data (JSON)</button><button class="btn small danger" type="button" data-act="shopImport">Import maintenance backup</button><input id="shopImportFile" type="file" accept=".json,application/json" hidden></div></section>';
+    return h;
+  }
+  function shopList(arr,type,render){ if(!arr.length)return '<p class="hint">No entries yet.</p>'; return '<div class="maint-list">'+arr.slice().reverse().map(function(x){return '<article class="maint-entry">'+render(x)+'<button class="btn small" type="button" data-act="shopDelete" data-type="'+type+'" data-id="'+esc(x.id)+'">Delete</button></article>';}).join('')+'</div>'; }
+  function saveShopForm(form){ var fd=new FormData(form),o={id:shopId(),createdAt:new Date().toISOString()}; fd.forEach(function(v,k){o[k]=String(v||'').trim();}); var type=form.getAttribute('data-shopform'); if(type==='controller')shopData.controllers.push(o); else if(type==='alarm')shopData.alarms.push(o); else if(type==='maintenance')shopData.maintenance.push(o); else if(type==='downtime')shopData.downtime.push(o); if(saveShopData()){form.reset();renderAll(true);toast('Saved '+type+' record.');} }
+
+  /* ---------- events ---------- */
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act]'); if (!t) return;
+    var act = t.getAttribute('data-act');
+    if (act === 'new') openSheet(null);
+    else if (act === 'tab') { S.tab = t.getAttribute('data-tab'); renderAll(true); }
+    else if (act === 'status') { S.status = t.getAttribute('data-v'); renderView(true); }
+    else if (act === 'clearMachine') { S.machine = ''; renderView(true); }
+    else if (act === 'urgent') { S.urgent = !S.urgent; renderView(true); }
+    else if (act === 'clearFilters') { S.q = ''; S.status = 'all'; S.cat = 'all'; S.machine = ''; S.urgent = false; renderView(true); }
+    else if (act === 'open') openSheet(t.getAttribute('data-id'));
+    else if (act === 'machine') { S.machine = t.getAttribute('data-mk'); S.urgent = false; S.status = 'all'; S.cat = 'all'; S.q = ''; S.tab = 'jobs'; renderAll(true); window.scrollTo(0, 0); }
+    else if (act === 'catalogueFilter') { var cc=t.getAttribute('data-cat'); document.querySelectorAll('[data-act="catalogueFilter"]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-cat')===cc));}); document.querySelectorAll('.catalogue-card').forEach(function(card){card.hidden=(cc!=='all'&&card.getAttribute('data-catalogue-cat')!==cc)||!norm($('#catalogueSearch')?$('#catalogueSearch').value:'').split(' ').every(function(w){return card.getAttribute('data-catalogue').indexOf(w)>=0;});}); }
+    else if (act === 'useCatalogMachine') { openSheet(null, {machine:t.getAttribute('data-model')}, 'Log a DN Solutions machine fault'); }
+    else if (act === 'again') {
+      var g = D.groups.get(t.getAttribute('data-gk')); if (!g) return;
+      var l = g.jobs[g.jobs.length - 1];
+      openSheet(null, { machine: l.machine, serial: l.serial, customer: l.customer, problem: l.problem, category: l.category, code: l.code }, 'Log it again');
+    }
+    else if (act === 'close') closeSheet();
+    else if (act === 'delAsk') { $('#normalRow').hidden = true; $('#delRow').hidden = false; }
+    else if (act === 'delCancel') { $('#delRow').hidden = true; $('#normalRow').hidden = false; }
+    else if (act === 'delYes') deleteCurrent();
+    else if (act === 'export') exportCSV();
+    else if (act === 'import') { var fi=$('#importFile'); if(fi)fi.click(); }
+    else if (act === 'removePhoto') { S.formPhotos.splice(Number(t.getAttribute('data-index')),1); var pp=$('#photoPreview'); if(pp)pp.innerHTML=S.formPhotos.map(function(src,i){return '<span class="photo-item"><img src="'+esc(src)+'" alt="Fault photo '+(i+1)+'"><button type="button" class="btn small" data-act="removePhoto" data-index="'+i+'">Remove</button></span>';}).join(''); }
+    else if (act === 'removeExamples') removeExamples();
+    else if (act === 'shopDelete') { var typ=t.getAttribute('data-type'), sid=t.getAttribute('data-id'); if(shopData[typ]){shopData[typ]=shopData[typ].filter(function(x){return x.id!==sid;});saveShopData();renderAll(true);toast('Entry deleted.');} }
+    else if (act === 'shopExport') { var blob=new Blob([JSON.stringify(shopData,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='dn-solutions-maintenance-backup.json';a.click();URL.revokeObjectURL(url);toast('Maintenance backup exported.'); }
+    else if (act === 'shopImport') { var sf=$('#shopImportFile');if(sf)sf.click(); }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('#sheet').hidden) { closeSheet(); return; }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][data-act]')) { e.preventDefault(); e.target.click(); }
+  });
+  document.addEventListener('submit', function(e){var f=e.target;if(f&&f.matches&&f.matches('form[data-shopform]')){e.preventDefault();saveShopForm(f);}});
+  document.addEventListener('change', function(e){if(e.target&&e.target.id==='shopImportFile'&&e.target.files&&e.target.files[0]){var file=e.target.files[0],rd=new FileReader();rd.onload=function(){try{var x=JSON.parse(rd.result);['controllers','alarms','maintenance','downtime'].forEach(function(k){if(Array.isArray(x[k]))shopData[k]=shopData[k].concat(x[k]);});saveShopData();renderAll(true);toast('Maintenance backup imported.');}catch(err){toast('Could not read that JSON backup.');}};rd.readAsText(file);e.target.value='';}});
+  document.addEventListener('input', function (e) {
+    if (e.target && e.target.id === 'catalogueSearch') { var words=norm(e.target.value).split(' ').filter(Boolean); var active=document.querySelector('[data-act="catalogueFilter"][aria-pressed="true"]'); var cat=active?active.getAttribute('data-cat'):'all'; document.querySelectorAll('.catalogue-card').forEach(function(card){card.hidden=(cat!=='all'&&card.getAttribute('data-catalogue-cat')!==cat)||!words.every(function(w){return card.getAttribute('data-catalogue').indexOf(w)>=0;});}); return; }
+    var t = e.target;
+    if (t.id === 'importFile' && t.files && t.files[0]) { importCSVFile(t.files[0]); t.value=''; return; }
+    if (t.id === 'f-photos' && t.files && t.files.length) { (async function(){try{var files=Array.from(t.files).slice(0,4-S.formPhotos.length);for(var i=0;i<files.length;i++){if(!files[i].type.startsWith('image/'))continue;S.formPhotos.push(await resizePhoto(files[i]));}var pp=$('#photoPreview');if(pp)pp.innerHTML=S.formPhotos.map(function(src,i){return '<span class="photo-item"><img src="'+esc(src)+'" alt="Fault photo '+(i+1)+'"><button type="button" class="btn small" data-act="removePhoto" data-index="'+i+'">Remove</button></span>';}).join('');if(t.files.length>files.length)toast('Maximum 4 photos per record.');}catch(err){toast('Could not read one of the photos.');}})(); return; }
+    if (t.id === 'q') { S.q = t.value; renderJobList(); }
+    else if (t.closest && t.closest('#jobForm')) {
+      if (t.id === 'f-serial' || t.id === 'f-machine' || t.id === 'f-problem') updateHint();
+    }
+  });
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.id === 'catSel') { S.cat = t.value; renderJobList(); }
+    else if (t.name === 'status') {
+      var fixed = t.value === 'Fixed';
+      $('#fixedWrap').hidden = !fixed;
+      if (fixed && !$('#f-fixed').value) $('#f-fixed').value = nowLocal();
+    }
+    else if (t.id === 'f-serial') {
+      var k = norm(t.value); if (!k) return;
+      var m = D.machines.get(k);
+      if (m) {
+        if (!$('#f-machine').value.trim() && m.model) $('#f-machine').value = m.model;
+        if (!$('#f-customer').value.trim() && m.customer) $('#f-customer').value = m.customer;
+      }
+      updateHint();
+    }
+    else if (t.id === 'f-problem') {
+      var p = norm(t.value), cat = $('#f-category');
+      if (p && cat.value === 'Other') {
+        for (var i = D.asc.length - 1; i >= 0; i--) { if (problemKey(D.asc[i]) === p && D.asc[i].category) { cat.value = D.asc[i].category; break; } }
+      }
+      updateHint();
+    }
+  });
+  document.addEventListener('submit', function (e) { if (e.target.id === 'jobForm') { e.preventDefault(); saveForm(); } });
+
+  /* ---------- boot ---------- */
+  async function boot() {
+    S.jobs = []; renderAll(true);
+    var db = null;
+    try { if (window.claude && typeof window.claude.use === 'function') db = await window.claude.use('db'); } catch (e) { db = null; }
+    if (db) {
+      S.mode = 'db';
+      col = db.collection('jobs');
+      col.onSnapshot(function (snap) {
+        S.jobs = snap.docs.map(function (d) { var o = Object.assign({}, d.data()); o.id = d.id; return o; });
+        S.loaded = true; S.dbError = '';
+        renderAll(false);
+      }, function () { S.dbError = 'unreachable'; S.loaded = true; renderAll(false); });
+    } else {
+      S.mode = 'local'; S.jobs = lsLoad(); S.loaded = true; renderAll(true);
+    }
+  }
+  boot();
+})();
+</script>
+
+<style id="glass-refresh">
+/* Glass UI refresh */
+:root {
+  --bg: #081426;
+  --surface: rgba(20, 37, 61, .70);
+  --surface-2: rgba(34, 56, 85, .72);
+  --line: rgba(190, 215, 245, .16);
+  --fg: #edf5ff;
+  --muted: #a9bbd2;
+  --accent: #78b7ff;
+  --accent-fg: #071426;
+  --accent-soft: rgba(92, 164, 255, .18);
+  --open: #ffc66d; --open-bg: rgba(255, 185, 78, .14);
+  --prog: #85c7ff; --prog-bg: rgba(94, 171, 255, .14);
+  --fixed: #7ce2b0; --fixed-bg: rgba(72, 213, 147, .13);
+  --rep: #ff9d9d; --rep-bg: rgba(255, 100, 115, .14);
+  --scrim: rgba(2, 8, 20, .72);
+}
+html { min-height:100%; background:#081426; }
+body {
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(47,125,220,.27), transparent 35%),
+    radial-gradient(ellipse at 90% 15%, rgba(106,75,220,.20), transparent 31%),
+    radial-gradient(ellipse at 55% 100%, rgba(16,185,190,.11), transparent 35%),
+    #081426 !important;
+  color:var(--fg); padding-inline:clamp(12px,3vw,32px);
+}
+.app { max-width:1120px; }
+.top {
+  background:rgba(8,20,38,.72); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+  border:1px solid var(--line); border-top:0; border-radius:0 0 22px 22px;
+  padding:18px 22px; box-shadow:0 14px 40px rgba(0,0,0,.18);
+}
+.brand h1 { font-size:clamp(28px,4vw,36px); letter-spacing:.025em; color:#f5f9ff; text-shadow:0 0 28px rgba(100,170,255,.24); }
+.brand .sub { color:#a9c4e5; }
+.btn { border-radius:12px; border-color:rgba(192,218,255,.2); background:rgba(255,255,255,.055); color:var(--fg); transition:transform .18s ease,background .18s ease,box-shadow .18s ease; }
+.btn:hover { background:rgba(255,255,255,.12); transform:translateY(-1px); }
+.btn.primary { color:#071426; background:linear-gradient(135deg,#a6d5ff,#65aaff 58%,#8b9cff); border-color:transparent; box-shadow:0 7px 22px rgba(76,151,255,.24); }
+.btn.primary:hover { background:linear-gradient(135deg,#c2e3ff,#78b7ff 58%,#a1adff); }
+.btn.danger { color:#fff; background:linear-gradient(135deg,#fa777e,#d9435d); }
+.stats { gap:12px; background:transparent; border:0; overflow:visible; margin-top:22px; }
+.stat { position:relative; overflow:hidden; border:1px solid var(--line); border-radius:18px; padding:18px; background:linear-gradient(145deg,rgba(255,255,255,.105),rgba(255,255,255,.035)); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); box-shadow:0 12px 32px rgba(0,0,0,.14); }
+.stat:after { content:""; position:absolute; width:90px;height:90px;right:-35px;top:-42px;border-radius:50%;background:rgba(116,181,255,.10);filter:blur(3px);pointer-events:none; }
+.stat .k { color:#b4c9e4; font-size:14px; }
+.stat .v { color:#f3f8ff; font-size:clamp(23px,3vw,29px); }
+.tabs { gap:7px; padding:6px; border:1px solid var(--line); border-radius:16px; background:rgba(255,255,255,.035); backdrop-filter:blur(12px); }
+.tab { border:0; border-radius:11px; padding:11px 17px; color:#9fb2ca; transition:background .2s,color .2s; }
+.tab[aria-selected="true"],.tab.active { color:#f2f8ff; background:linear-gradient(135deg,rgba(110,177,255,.25),rgba(130,128,255,.16)); box-shadow:inset 0 0 0 1px rgba(163,204,255,.16); }
+.card,.sheet,.block,.list,.toolbar,.banner,.empty,.list-head,.bars,.cat,.chips { border-color:var(--line); }
+.card,.sheet,.block { background:linear-gradient(145deg,rgba(24,43,69,.82),rgba(13,28,49,.78)); border:1px solid var(--line); border-radius:20px; box-shadow:0 18px 45px rgba(0,0,0,.20); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
+.card { padding:18px; margin-block:12px; }
+.card-head { border-color:var(--line); }
+input,select,textarea { color:var(--fg)!important; background:rgba(4,15,31,.52)!important; border:1px solid rgba(173,205,245,.22)!important; border-radius:11px!important; }
+input::placeholder,textarea::placeholder { color:#8299b6!important; }
+input:focus,select:focus,textarea:focus { outline:0; border-color:#78b7ff!important; box-shadow:0 0 0 3px rgba(104,174,255,.13); }
+.chip { border-radius:999px; border-color:rgba(173,205,245,.2); background:rgba(255,255,255,.045); color:#c6d7eb; }
+.chip:hover { background:rgba(255,255,255,.10); }
+.banner { border-radius:14px; }
+.empty { border:1px dashed rgba(173,205,245,.23); border-radius:16px; background:rgba(255,255,255,.025); }
+.pills span,.pill { border-radius:999px; }
+.sheet { box-shadow:0 28px 90px rgba(0,0,0,.5); }
+.toast { border:1px solid var(--line); border-radius:14px; background:rgba(20,37,61,.92); backdrop-filter:blur(18px); }
+@media(max-width:600px) {
+  body { padding-inline:10px; }
+  .top { padding:15px 13px; border-radius:0 0 18px 18px; }
+  .stats { gap:8px; }
+  .stat { padding:13px 12px; border-radius:15px; }
+  .tabs { margin-top:15px; }
+  .tab { padding:10px 12px; font-size:16px; }
+}
+@media(prefers-reduced-motion:reduce) { *,*:before,*:after { transition:none!important; animation:none!important; } }
+
+
+.maint-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}.maint-card{padding:18px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025));display:grid;gap:11px;align-content:start}.maint-card h3{margin:0 0 3px;font-size:17px}.maint-card label{display:grid;gap:5px;font-size:13px;color:var(--muted)}.maint-card .btn{justify-self:start}.maint-list{display:grid;gap:9px;margin:10px 0 20px}.maint-entry{padding:14px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.035)}.maint-entry p{margin:7px 0}.maint-entry .btn{margin-top:8px}.block>h3{margin-top:22px}.row-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}@media(max-width:700px){.maint-grid{grid-template-columns:1fr}.maint-card{padding:14px}}
+</style>
+
+<style id="ops-hub-styles">
+/* Operations Hub: glassy shop-floor extension */
+:root{
+ --ops-glass:rgba(18,35,59,.72);--ops-glass2:rgba(28,49,77,.58);
+ --ops-edge:rgba(177,207,244,.19);--ops-ink:#eef6ff;--ops-muted:#a7bad2;
+ --ops-blue:#80baff;--ops-purple:#b6a2ff;--ops-green:#6fe0b0;--ops-amber:#ffd17d;--ops-red:#ff8c9a;
+}
+body{background:radial-gradient(ellipse at 12% 0%,rgba(50,105,184,.22),transparent 36%),radial-gradient(ellipse at 94% 16%,rgba(122,82,205,.16),transparent 32%),#081321!important;color:var(--ops-ink)!important}
+.app{max-width:1240px!important}
+.top{background:rgba(8,19,33,.76)!important;border:1px solid var(--ops-edge)!important;border-top:0!important;border-radius:0 0 22px 22px;padding:18px 20px!important;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.brand h1{letter-spacing:.025em!important}
+.brand .sub{color:var(--ops-muted)!important}
+.stats{gap:12px!important;background:transparent!important;border:0!important;overflow:visible!important}
+.stat,.card,.block,.sheet,.maint-card,.maint-entry,.catalogue-card,.empty,.toolbar,.banner,.list,.ops-panel,.ops-kpi,.ops-item,.ops-table-wrap,.ops-form,.ops-chart,.ops-alert{
+ background:linear-gradient(145deg,rgba(25,46,74,.78),rgba(12,26,45,.76))!important;border:1px solid var(--ops-edge)!important;border-radius:18px!important;
+ box-shadow:0 16px 42px rgba(0,0,0,.2)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)
+}
+.stat{padding:18px!important}.stat .k{color:var(--ops-muted)!important}.stat .v{color:var(--ops-ink)!important}
+.tabs{border:1px solid var(--ops-edge)!important;border-radius:16px!important;padding:6px!important;background:rgba(255,255,255,.035)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.tab{border:0!important;border-radius:11px!important;color:var(--ops-muted)!important;padding:11px 14px!important}
+.tab[aria-selected="true"]{color:#fff!important;background:linear-gradient(135deg,rgba(96,170,255,.24),rgba(151,112,255,.17))!important;box-shadow:inset 0 0 0 1px rgba(167,205,255,.2)!important}
+button.btn{border-radius:11px!important;transition:transform .16s ease,filter .16s ease,box-shadow .16s ease!important}
+button.btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.btn.primary{background:linear-gradient(135deg,#78b8ff,#a5a0ff)!important;color:#091526!important;border-color:transparent!important;box-shadow:0 8px 22px rgba(103,158,255,.22)}
+input,select,textarea{background:rgba(3,13,27,.52)!important;color:var(--ops-ink)!important;border:1px solid var(--ops-edge)!important;border-radius:11px!important}
+input::placeholder,textarea::placeholder{color:#7e94b2!important}
+label{color:var(--ops-muted)}
+.ops-shell{margin:14px 0 26px}
+.ops-hero{position:relative;overflow:hidden;padding:clamp(20px,4vw,34px);border-radius:24px;border:1px solid var(--ops-edge);background:linear-gradient(120deg,rgba(49,91,148,.43),rgba(83,62,143,.26) 55%,rgba(23,53,81,.5));box-shadow:0 20px 55px rgba(0,0,0,.22);margin-bottom:16px}
+.ops-hero:after{content:"";position:absolute;width:240px;height:240px;right:-55px;top:-130px;border-radius:50%;background:rgba(126,181,255,.15);filter:blur(2px);pointer-events:none}
+.ops-eyebrow{font:500 11px var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ops-blue)}
+.ops-hero h2{font:700 clamp(28px,4vw,42px)/1.05 var(--f-display);margin:8px 0 9px;color:#f5f9ff}
+.ops-hero p{max-width:720px;color:#c1d1e6}
+.ops-hero-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+.ops-subnav{display:flex;gap:7px;flex-wrap:wrap;margin:15px 0}
+.ops-subnav button{border:1px solid var(--ops-edge);border-radius:999px;padding:9px 13px;background:rgba(255,255,255,.035);color:var(--ops-muted);cursor:pointer;font:500 13px var(--f-body)}
+.ops-subnav button.active{background:rgba(117,178,255,.18);border-color:rgba(117,178,255,.4);color:#f5f9ff}
+.ops-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:13px}
+.ops-col-12{grid-column:span 12}.ops-col-8{grid-column:span 8}.ops-col-7{grid-column:span 7}.ops-col-6{grid-column:span 6}.ops-col-5{grid-column:span 5}.ops-col-4{grid-column:span 4}.ops-col-3{grid-column:span 3}
+.ops-panel{padding:18px;min-width:0}.ops-panel h3{font:600 19px var(--f-display);margin:0 0 5px;color:#f4f8ff}.ops-muted{color:var(--ops-muted);font-size:13px}.ops-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+.ops-kpi{padding:16px;min-width:0}.ops-kpi .label{color:var(--ops-muted);font-size:12px}.ops-kpi .value{font:500 clamp(23px,3vw,31px)/1.2 var(--f-mono);margin:6px 0;color:#f5f9ff}.ops-kpi .hint{font-size:11px;color:var(--ops-muted)}
+.ops-form{padding:17px;margin:13px 0}.ops-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ops-fields .full{grid-column:1/-1}.ops-fields label{display:grid;gap:6px;font-size:12px}.ops-fields input,.ops-fields select,.ops-fields textarea{width:100%;min-width:0;padding:10px 11px}.ops-fields textarea{min-height:78px;resize:vertical}
+.ops-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.ops-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:19px 0 10px}.ops-section-head h3{margin:0;font:600 22px var(--f-display)}
+.ops-table-wrap{overflow:auto;margin:12px 0}.ops-table{width:100%;border-collapse:collapse;min-width:660px}.ops-table th,.ops-table td{text-align:left;padding:12px 13px;border-bottom:1px solid rgba(180,205,236,.11);vertical-align:top;font-size:13px}.ops-table th{color:var(--ops-muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;background:rgba(255,255,255,.025)}.ops-table tr:last-child td{border-bottom:0}
+.ops-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:600;border:1px solid var(--ops-edge);background:rgba(255,255,255,.05);white-space:nowrap}.ops-badge.green{color:var(--ops-green);background:rgba(55,190,130,.09)}.ops-badge.red{color:var(--ops-red);background:rgba(255,90,120,.09)}.ops-badge.amber{color:var(--ops-amber);background:rgba(255,180,70,.09)}.ops-badge.blue{color:var(--ops-blue);background:rgba(80,150,255,.09)}
+.ops-empty{padding:22px;text-align:center;color:var(--ops-muted);border:1px dashed var(--ops-edge);border-radius:15px;margin:10px 0}
+.ops-inline{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ops-inline input,.ops-inline select{padding:9px 10px;max-width:100%}
+.ops-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px}.ops-bar span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#77baff,#b29cff)}
+.ops-alert{padding:12px 14px;margin:9px 0;color:#d9e8fb;font-size:13px}
+.ops-mini{font:11px var(--f-mono);color:var(--ops-muted)}
+.ops-record{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.ops-record h4{margin:0 0 4px;font-size:14px;color:#f1f7ff}
+.ops-record p{margin:3px 0;color:var(--ops-muted);font-size:12px}
+.ops-actions .btn,.ops-inline .btn{min-height:34px;padding:6px 10px;font-size:12px}
+.ops-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:12px}
+.ops-card{padding:15px;border:1px solid var(--ops-edge);border-radius:16px;background:rgba(255,255,255,.035);min-width:0}
+.ops-card h4{margin:7px 0 4px;font-size:16px}.ops-card p{font-size:12px;color:var(--ops-muted);margin:4px 0}
+.ops-divider{height:1px;background:var(--ops-edge);margin:15px 0}
+.ops-note{font-size:12px;color:var(--ops-muted);line-height:1.6}
+#opsToast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;padding:11px 16px;border:1px solid var(--ops-edge);border-radius:12px;background:rgba(9,22,39,.95);box-shadow:0 12px 30px rgba(0,0,0,.3);color:#fff;display:none;max-width:90vw}
+@media(max-width:850px){.ops-col-8,.ops-col-7,.ops-col-5,.ops-col-4,.ops-col-3{grid-column:span 6}.ops-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){body{padding-inline:10px!important}.top{padding:14px 12px!important}.ops-grid{display:grid;grid-template-columns:1fr}.ops-col-12,.ops-col-8,.ops-col-7,.ops-col-6,.ops-col-5,.ops-col-4,.ops-col-3{grid-column:1}.ops-kpis{gap:8px}.ops-kpi{padding:12px}.ops-panel{padding:14px}.ops-fields{grid-template-columns:1fr}.ops-fields .full{grid-column:auto}.ops-hero{border-radius:19px}.ops-hero-actions .btn{flex:1 1 100%}.ops-table{min-width:590px}.ops-section-head{align-items:flex-start;flex-direction:column}}
+@media(prefers-reduced-motion:reduce){.ops-shell *{transition:none!important}}
+</style>
+
+<script id="ops-hub-script">
+(function(){
+'use strict';
+var KEY='dn_solutions_ops_hub_v1';
+var data=load();
+var active='overview';
+var editId=null;
+var importTarget=null;
+var MACHINES=[
+ ['Turning Centers','PUMA','Horizontal and vertical turning families'],
+ ['Turning Centers','Lynx','Compact turning centers'],
+ ['Turning Centers','LEO','Compact turning centers'],
+ ['Turning Centers','PUMA TT / TW','Multi-turret and twin-spindle turning families'],
+ ['Vertical Machining Centers','DNM','Vertical machining centers'],
+ ['Vertical Machining Centers','Mynx','Vertical machining centers'],
+ ['Vertical Machining Centers','SVM','Vertical machining centers'],
+ ['Horizontal Machining Centers','NHP','Horizontal machining centers'],
+ ['Horizontal Machining Centers','NHC / NHM','Horizontal machining centers'],
+ ['Five-Axis Machining Centers','DVF','Five-axis machining centers'],
+ ['Five-Axis Machining Centers','DNM 5AX','Five-axis machining centers'],
+ ['Multifunctional Machines','SMX / DNX','Mill-turn and multifunction families'],
+ ['Double-Column Machines','BM / DBM / DCM','Double-column machining families'],
+ ['Boring Mills','DBC / DBD','Boring mill families']
+];
+function empty(){return {machines:[],production:[],downtime:[],tools:[],maintenance:[],inventory:[],handovers:[],docs:[],alarms:[],audit:[]};}
+function load(){try{var x=JSON.parse(localStorage.getItem(KEY)||'{}'),d=empty();Object.keys(d).forEach(function(k){d[k]=Array.isArray(x[k])?x[k]:[]});return d}catch(e){return empty()}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data));return true}catch(e){toast('Could not save. Storage may be full. Export a backup and reduce photo attachments.');return false}}
+function id(){return 'ops-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7)}
+function $(s,r){return (r||document).querySelector(s)}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function num(v){var n=Number(v);return Number.isFinite(n)?n:0}
+function dateNow(){var d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())}
+function dtNow(){var d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())}
+function fmt(d){if(!d)return '—';var x=new Date(d);return isNaN(x)?esc(d):x.toLocaleString([], {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+function toast(s){var el=$('#opsToast');if(!el){el=document.createElement('div');el.id='opsToast';document.body.appendChild(el)}el.textContent=s;el.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){el.style.display='none'},2800)}
+function opts(list,val){return list.map(function(x){var v=Array.isArray(x)?x[0]:x,l=Array.isArray(x)?x[1]:x;return '<option value="'+esc(v)+'" '+(String(v)===String(val)?'selected':'')+'>'+esc(l)+'</option>'}).join('')}
+function machineOpts(val){var arr=data.machines.map(function(m){return [m.id,(m.name||m.id)+(m.serial?' · '+m.serial:'')]});return '<option value="">Select machine…</option>'+opts(arr,val)}
+function badge(s){var c=/running|complete|fixed|good|active|closed/i.test(s)?'green':/breakdown|overdue|critical|rejected/i.test(s)?'red':/due|pending|maintenance|idle|open|in progress/i.test(s)?'amber':'blue';return '<span class="ops-badge '+c+'">'+esc(s||'Not set')+'</span>'}
+function panel(title,sub,body,span){return '<section class="ops-panel ops-col-'+(span||6)+'"><h3>'+title+'</h3>'+(sub?'<p class="ops-muted">'+sub+'</p>':'')+body+'</section>'}
+function kpi(label,value,hint){return '<div class="ops-kpi"><div class="label">'+label+'</div><div class="value">'+value+'</div><div class="hint">'+(hint||'')+'</div></div>'}
+function emptyState(msg){return '<div class="ops-empty">'+msg+'</div>'}
+function table(headers,rows){if(!rows.length)return emptyState('Nothing recorded yet. Use the form above to add your first entry.');return '<div class="ops-table-wrap"><table class="ops-table"><thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>'}
+function machineName(mid){var m=data.machines.find(x=>x.id===mid);return m?(m.name||m.id)+(m.serial?' · '+m.serial:''):(mid||'Unassigned')}
+function minutesBetween(a,b){var x=new Date(a),y=new Date(b);return a&&b&&!isNaN(x)&&!isNaN(y)&&y>=x?(y-x)/60000:0}
+function minsLabel(m){if(!m)return '0 min';var h=Math.floor(m/60),mm=Math.round(m%60);return h?h+' h '+mm+' min':mm+' min'}
+function machineStatus(m){var activeDown=data.downtime.some(d=>d.machine===m.id&&!d.end);return activeDown?'Breakdown':m.status||'Idle'}
+function dueMaintenance(){return data.maintenance.filter(x=>x.status!=='Complete'&&x.due&&x.due<=dateNow())}
+function openDowntime(){return data.downtime.filter(x=>!x.end)}
+function currentMonth(x){return String(x.date||'').slice(0,7)===dateNow().slice(0,7)}
+function sumRepair(){return data.downtime.filter(x=>x.end).reduce((a,x)=>a+minutesBetween(x.start,x.end),0)}
+function render(){
+ var tabs=[['overview','Overview'],['machines','Machines'],['production','Production'],['downtime','Downtime & Reliability'],['tools','Tool Life'],['maintenance','Maintenance'],['inventory','Spare Parts'],['handover','Shift Handover'],['docs','Documents & Alarms'],['backup','Backup / Reports']];
+ var nav='<div class="ops-subnav" role="tablist">'+tabs.map(t=>'<button type="button" data-opstab="'+t[0]+'" class="'+(active===t[0]?'active':'')+'" aria-selected="'+(active===t[0])+'">'+t[1]+'</button>').join('')+'</div>';
+ var title=tabs.find(t=>t[0]===active);$('#view').innerHTML='<div class="ops-shell"><section class="ops-hero"><div class="ops-eyebrow">DN SOLUTIONS · SHOP-FLOOR SYSTEM</div><h2>Machine Operations Hub</h2><p>One workspace for machine status, shift output, downtime, tool life, preventive maintenance, spare parts and technical records.</p><div class="ops-hero-actions"><button class="btn primary" data-opsaction="quickfault">＋ Log machine fault</button><button class="btn" data-opsaction="quickproduction">＋ Add shift production</button><button class="btn" data-opsaction="export">⇩ Export full backup</button></div></section>'+nav+'<div class="ops-section-head"><div><h3>'+title[1]+'</h3><p class="ops-muted">Saved in this browser · '+data.machines.length+' registered machines</p></div></div>'+viewHTML()+'</div>';
+}
+function viewHTML(){
+ switch(active){
+ case 'overview':return overviewHTML();
+ case 'machines':return machinesHTML();
+ case 'production':return productionHTML();
+ case 'downtime':return downtimeHTML();
+ case 'tools':return toolsHTML();
+ case 'maintenance':return maintenanceHTML();
+ case 'inventory':return inventoryHTML();
+ case 'handover':return handoverHTML();
+ case 'docs':return docsHTML();
+ case 'backup':return backupHTML();
+ default:return overviewHTML()
+ }
+}
+function overviewHTML(){
+ var down=openDowntime(),due=dueMaintenance(),monthProd=data.production.filter(currentMonth).reduce((a,x)=>a+num(x.good),0),reject=data.production.filter(currentMonth).reduce((a,x)=>a+num(x.reject),0),total=data.production.filter(currentMonth).reduce((a,x)=>a+num(x.good)+num(x.reject),0);
+ var running=data.machines.filter(m=>machineStatus(m)==='Running').length,avg= data.downtime.filter(x=>x.end).length?sumRepair()/data.downtime.filter(x=>x.end).length:0;
+ var statusRows=data.machines.slice(0,12).map(m=>'<tr><td><b>'+esc(m.name||m.id)+'</b><div class="ops-mini">'+esc(m.serial||m.model||'No serial/model')+'</div></td><td>'+esc(m.type||'Not set')+'</td><td>'+badge(machineStatus(m))+'</td><td>'+esc(m.controller||'—')+'</td><td><button class="btn small" data-opsaction="editmachine" data-id="'+m.id+'">Edit</button></td></tr>');
+ var alerts=[];
+ if(down.length)alerts.push('<div class="ops-alert">🔴 <b>'+down.length+' active breakdown(s)</b> need closure. Open Downtime to record repair completion.</div>');
+ if(due.length)alerts.push('<div class="ops-alert">🟠 <b>'+due.length+' maintenance task(s)</b> are due or overdue.</div>');
+ if(data.inventory.some(x=>num(x.stock)<=num(x.min)))alerts.push('<div class="ops-alert">🧰 Spare parts stock is at or below minimum for '+data.inventory.filter(x=>num(x.stock)<=num(x.min)).length+' item(s).</div>');
+ if(!alerts.length)alerts.push('<div class="ops-alert">✓ No active breakdown or overdue maintenance is recorded. This reflects entered data, not a live CNC connection.</div>');
+ var rows=data.production.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,6).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(machineName(x.machine))+'</td><td>'+esc(x.shift||'—')+'</td><td>'+num(x.good)+'</td><td>'+num(x.reject)+'</td><td>'+num(x.target?Math.round(num(x.good)/num(x.target)*100):0)+'%</td></tr>');
+ return '<div class="ops-kpis">'+kpi('Registered machines',data.machines.length,'Manual registry')+kpi('Active breakdowns',down.length,'Open downtime entries')+kpi('Maintenance due',due.length,'Due today or earlier')+kpi('Good parts this month',monthProd,'Rejects: '+reject+' / '+total+' total')+'</div><div class="ops-grid">'+panel('Attention required','Items that may need action',alerts.join(''),5)+panel('Repair performance','Completed downtime records','<div class="ops-kpis" style="grid-template-columns:repeat(2,minmax(0,1fr))">'+kpi('Completed incidents',data.downtime.filter(x=>x.end).length,'Recorded breakdowns')+kpi('Average repair time',minsLabel(avg),'MTTR from completed downtime')+'</div><p class="ops-note">MTBF requires reliable operating hours. Add run hours to records or import them before using MTBF as a performance measure.</p>',7)+panel('Machine status','Click Edit to update manually',table(['Machine','Type','Status','Controller','Action'],statusRows),12)+panel('Recent production','Latest shift entries',table(['Date','Machine','Shift','Good','Reject','Target'],rows),12)+'</div>';
+}
+function machinesHTML(){
+ return '<div class="ops-grid">'+panel('Register / edit machine','Use the machine name or shop-floor ID your team recognizes.',machineForm(),5)+panel('Registered machines','Status is manually maintained unless a monitoring integration is added.',table(['Machine','Model family','Serial / asset ID','Type','Status','Actions'],data.machines.map(m=>'<tr><td><b>'+esc(m.name||m.id)+'</b></td><td>'+esc(m.model||'—')+'</td><td>'+esc(m.serial||'—')+'</td><td>'+esc(m.type||'—')+'</td><td>'+badge(machineStatus(m))+'</td><td><button class="btn small" data-opsaction="editmachine" data-id="'+m.id+'">Edit</button> <button class="btn small" data-opsaction="del" data-kind="machines" data-id="'+m.id+'">Delete</button></td></tr>')),7)+'</div><div class="ops-panel" style="margin-top:13px"><h3>DN Solutions model-family reference</h3><p class="ops-muted">Family-level starter list only. Confirm exact model names, options, serial details and specifications against the official machine plate and documentation.</p><div class="ops-cards" style="margin-top:12px">'+MACHINES.map(m=>'<div class="ops-card"><div class="ops-eyebrow">'+esc(m[0])+'</div><h4>'+esc(m[1])+'</h4><p>'+esc(m[2])+'</p><button class="btn small" data-opsaction="prefillmachine" data-model="'+esc(m[1])+'" data-type="'+esc(m[0])+'">Use family</button></div>').join('')+'</div><p class="ops-note" style="margin-top:12px">This is not a complete inventory of every DN Solutions model and does not contain verified machine specifications or alarm codes.</p></div>';
+}
+function machineForm(m){
+ m=m||{};return '<form class="ops-form" data-opsform="machine"><input type="hidden" name="id" value="'+esc(m.id||'')+'"><div class="ops-fields"><label>Machine ID / tag *<input name="name" required placeholder="e.g. HMC-01" value="'+esc(m.name||'')+'"></label><label>Machine category<select name="type">'+opts(['Horizontal Machining Center','Vertical Machining Center','CNC Turning Center','5-Axis Machining Center','Mill-Turn / Multifunction','Other'],m.type)+'</select></label><label>Model / family<input name="model" placeholder="e.g. NHP / DNM / PUMA" value="'+esc(m.model||'')+'"></label><label>Serial / asset number<input name="serial" value="'+esc(m.serial||'')+'"></label><label>Controller<select name="controller">'+opts(['Fanuc','Mitsubishi','Siemens','Heidenhain','Other / unknown'],m.controller)+'</select></label><label>Controller model / version<input name="controlModel" value="'+esc(m.controlModel||'')+'" placeholder="Verify from controller screen"></label><label>Location / line<input name="location" value="'+esc(m.location||'')+'"></label><label>Current status<select name="status">'+opts(['Running','Idle','Maintenance','Breakdown'],m.status||'Idle')+'</select></label><label class="full">Notes<textarea name="notes" placeholder="Options, axes, spindle details, documentation notes">'+esc(m.notes||'')+'</textarea></label></div><div class="ops-actions"><button class="btn primary">'+(m.id?'Save machine':'Add machine')+'</button><button type="reset" class="btn">Clear form</button></div></form>';
+}
+function productionHTML(){
+ var total=data.production.reduce((a,x)=>a+num(x.good)+num(x.reject),0),good=data.production.reduce((a,x)=>a+num(x.good),0),reject=data.production.reduce((a,x)=>a+num(x.reject),0);
+ return '<div class="ops-kpis">'+kpi('Entries',data.production.length,'Shift records')+kpi('Good parts',good,'All recorded shifts')+kpi('Rejected parts',reject,'All recorded shifts')+kpi('Reject rate',total?(reject/total*100).toFixed(1)+'%':'0.0%','Rejected / total output')+'</div><div class="ops-grid">'+panel('Add shift production','Record target, good parts, rejects and cycle time.',productionForm(),5)+panel('Production history','Target achievement uses good quantity ÷ target quantity.',table(['Date','Machine','Shift','Part number','Target','Good','Reject','Cycle time','Action'],data.production.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(machineName(x.machine))+'</td><td>'+esc(x.shift)+'</td><td>'+esc(x.part||'—')+'</td><td>'+num(x.target)+'</td><td>'+num(x.good)+'</td><td>'+num(x.reject)+'</td><td>'+num(x.cycle)?'': ''+'</td><td><button class="btn small" data-opsaction="del" data-kind="production" data-id="'+x.id+'">Delete</button></td></tr>')),7)+'</div>';
+}
+function productionForm(){
+ return '<form class="ops-form" data-opsform="production"><div class="ops-fields"><label>Date<input type="date" name="date" value="'+dateNow()+'" required></label><label>Machine<select name="machine" required>'+machineOpts()+'</select></label><label>Shift<select name="shift">'+opts(['A','B','C','Day','Night','Other'],'A')+'</select></label><label>Operator<input name="operator" placeholder="Name / ID"></label><label>Part number<input name="part" placeholder="Part / drawing number"></label><label>Target quantity<input type="number" min="0" name="target" value="0"></label><label>Good quantity<input type="number" min="0" name="good" value="0" required></label><label>Rejected quantity<input type="number" min="0" name="reject" value="0"></label><label>Cycle time (min/part)<input type="number" min="0" step=".1" name="cycle" value="0"></label><label>Downtime during shift (min)<input type="number" min="0" name="downtime" value="0"></label><label class="full">Notes<textarea name="notes"></textarea></label></div><div class="ops-actions"><button class="btn primary">Save production entry</button></div></form>';
+}
+function downtimeHTML(){
+ var closed=data.downtime.filter(x=>x.end),mins=closed.reduce((a,x)=>a+minutesBetween(x.start,x.end),0),avg=closed.length?mins/closed.length:0;
+ var mtbfHours=data.downtime.filter(x=>num(x.runHours)>0).reduce((a,x)=>a+num(x.runHours),0),fails=data.downtime.length;
+ return '<div class="ops-kpis">'+kpi('Active breakdowns',openDowntime().length,'No end time recorded')+kpi('Completed repairs',closed.length,'Closed downtime entries')+kpi('Total repair time',minsLabel(mins),'From recorded start/end times')+kpi('MTTR',minsLabel(avg),'Average completed repair time')+'</div><div class="ops-grid">'+panel('Log breakdown / close repair','Use local time and record the actual start and end.',downtimeForm(),5)+panel('Reliability indicators','MTBF is calculated only where operating hours are entered.', '<div class="ops-kpis" style="grid-template-columns:repeat(2,minmax(0,1fr))">'+kpi('Recorded failures',fails,'All downtime incidents')+kpi('Run hours entered',mtbfHours.toFixed(1),'Sum of per-incident run-hour fields')+kpi('Estimated MTBF',mtbfHours&&fails?(mtbfHours/fails).toFixed(1)+' h':'—','Only meaningful with complete operating-hour data')+kpi('Closed incidents',closed.length,'For MTTR calculation')+'</div><p class="ops-note">MTBF = total operating hours ÷ failures. Do not use this estimate unless the run-hours values represent a consistent, non-overlapping operating-time basis. Live machine data is not connected.</p>',7)+panel('Downtime history','Open entries indicate an unresolved breakdown.',table(['Machine','Fault / alarm','Start','End','Downtime','Cause / action','Status','Action'],data.downtime.slice().sort((a,b)=>(b.start||'').localeCompare(a.start||'')).map(x=>'<tr><td>'+esc(machineName(x.machine))+'</td><td><b>'+esc(x.fault||'—')+'</b><div class="ops-mini">'+esc(x.alarm||'')+'</div></td><td>'+fmt(x.start)+'</td><td>'+fmt(x.end)+'</td><td>'+minsLabel(minutesBetween(x.start,x.end))+'</td><td>'+esc(x.action||x.cause||'—')+'</td><td>'+badge(x.end?'Closed':'Breakdown')+'</td><td>'+(x.end?'':'<button class="btn small" data-opsaction="closeDown" data-id="'+x.id+'">Close repair</button> ')+'<button class="btn small" data-opsaction="del" data-kind="downtime" data-id="'+x.id+'">Delete</button></td></tr>')),12)+'</div>';
+}
+function downtimeForm(x){
+ x=x||{};return '<form class="ops-form" data-opsform="downtime"><input type="hidden" name="id" value="'+esc(x.id||'')+'"><div class="ops-fields"><label>Machine<select name="machine" required>'+machineOpts(x.machine)+'</select></label><label>Fault / issue *<input name="fault" required value="'+esc(x.fault||'')+'" placeholder="Observed fault"></label><label>Alarm code<input name="alarm" value="'+esc(x.alarm||'')+'" placeholder="Exact displayed code"></label><label>Breakdown start<input type="datetime-local" name="start" value="'+esc(x.start||dtNow())+'" required></label><label>Repair completed<input type="datetime-local" name="end" value="'+esc(x.end||'')+'"></label><label>Operating hours since previous failure<input type="number" step=".1" min="0" name="runHours" value="'+esc(x.runHours||'')+'"></label><label>Root cause (verified)<input name="cause" value="'+esc(x.cause||'')+'"></label><label>Corrective action<input name="action" value="'+esc(x.action||'')+'"></label><label class="full">Notes<textarea name="notes">'+esc(x.notes||'')+'</textarea></label></div><div class="ops-actions"><button class="btn primary">'+(x.id?'Save breakdown':'Save breakdown')+'</button></div></form>';
+}
+function toolsHTML(){
+ return '<div class="ops-grid">'+panel('Tool / insert register','Track tool life by parts machined; replace according to approved process limits.',toolForm(),5)+panel('Tool life records','Progress is based on recorded parts and the target entered for each tool.',table(['Tool','Machine','Type / insert','Target parts','Parts used','Life used','Status','Action'],data.tools.map(x=>{var pct=x.target?Math.min(100,Math.round(num(x.used)/num(x.target)*100)):0;return '<tr><td><b>'+esc(x.number)+'</b></td><td>'+esc(machineName(x.machine))+'</td><td>'+esc(x.type||'—')+'</td><td>'+num(x.target)+'</td><td>'+num(x.used)+'</td><td>'+pct+'%<div class="ops-bar"><span style="width:'+pct+'%"></span></div></td><td>'+badge(pct>=100?'Replacement due':pct>=80?'Near target':'In use')+'</td><td><button class="btn small" data-opsaction="addtoolparts" data-id="'+x.id+'">＋ Parts</button> <button class="btn small" data-opsaction="del" data-kind="tools" data-id="'+x.id+'">Delete</button></td></tr>'})),7)+'</div>';
+}
+function toolForm(){return '<form class="ops-form" data-opsform="tool"><div class="ops-fields"><label>Tool number *<input name="number" required placeholder="T01"></label><label>Machine<select name="machine">'+machineOpts()+'</select></label><label>Tool / insert type<input name="type" placeholder="Drill, insert grade, holder"></label><label>Target life (parts)<input name="target" type="number" min="1" value="100" required></label><label>Parts machined so far<input name="used" type="number" min="0" value="0" required></label><label>Last changed date<input type="date" name="changed" value="'+dateNow()+'"></label><label class="full">Notes<textarea name="notes"></textarea></label></div><div class="ops-actions"><button class="btn primary">Add tool</button></div></form>'}
+function maintenanceHTML(){
+ return '<div class="ops-grid">'+panel('Create maintenance task','Set a due date based on the machine manual and site schedule.',maintenanceForm(),5)+panel('Maintenance tasks','Overdue tasks are highlighted by their due date.',table(['Task','Machine','Due date','Interval','Assigned to','Status','Action'],data.maintenance.slice().sort((a,b)=>(a.due||'').localeCompare(b.due||'')).map(x=>'<tr><td><b>'+esc(x.task)+'</b><div class="ops-mini">'+esc(x.notes||'')+'</div></td><td>'+esc(machineName(x.machine))+'</td><td>'+esc(x.due||'—')+'</td><td>'+esc(x.interval||'—')+'</td><td>'+esc(x.assignee||'—')+'</td><td>'+badge(x.status==='Complete'?'Complete':x.due&&x.due<=dateNow()?'Overdue':x.status||'Scheduled')+'</td><td>'+(x.status==='Complete'?'':'<button class="btn small" data-opsaction="completeMaint" data-id="'+x.id+'">Complete</button> ')+'<button class="btn small" data-opsaction="del" data-kind="maintenance" data-id="'+x.id+'">Delete</button></td></tr>')),7)+'</div>';
+}
+function maintenanceForm(){return '<form class="ops-form" data-opsform="maintenance"><div class="ops-fields"><label>Maintenance task *<input name="task" required placeholder="Check lubrication level"></label><label>Machine<select name="machine">'+machineOpts()+'</select></label><label>Due date<input name="due" type="date" required></label><label>Interval<select name="interval">'+opts(['Daily','Weekly','Monthly','Quarterly','Half-yearly','Yearly','By operating hours','One-time'],'Monthly')+'</select></label><label>Assigned technician<input name="assignee" placeholder="Name / ID"></label><label>Status<select name="status">'+opts(['Scheduled','In progress','Complete'],'Scheduled')+'</select></label><label class="full">Checklist / notes<textarea name="notes" placeholder="Follow the approved maintenance procedure"></textarea></label></div><div class="ops-actions"><button class="btn primary">Add maintenance task</button></div></form>'}
+function inventoryHTML(){
+ var low=data.inventory.filter(x=>num(x.stock)<=num(x.min));
+ return '<div class="ops-kpis">'+kpi('Unique spare parts',data.inventory.length,'Inventory items')+kpi('Low-stock items',low.length,'At or below minimum')+kpi('Total units',data.inventory.reduce((a,x)=>a+num(x.stock),0),'Across inventory')+kpi('Estimated inventory value','₹'+data.inventory.reduce((a,x)=>a+num(x.stock)*num(x.price),0).toLocaleString('en-IN',{maximumFractionDigits:2}),'Based on entered unit costs')+'</div><div class="ops-grid">'+panel('Add spare part','Verify part number and compatibility with the machine parts catalogue.',inventoryForm(),5)+panel('Stock register','Use stock in/out to keep quantities current.',table(['Part number','Description','Machine compatibility','Stock','Minimum','Unit cost','Status','Action'],data.inventory.map(x=>'<tr><td><b>'+esc(x.partNo)+'</b></td><td>'+esc(x.description)+'</td><td>'+esc(x.compat||'—')+'</td><td>'+num(x.stock)+'</td><td>'+num(x.min)+'</td><td>₹'+num(x.price).toLocaleString('en-IN')+'</td><td>'+badge(num(x.stock)<=num(x.min)?'Low stock':'In stock')+'</td><td><button class="btn small" data-opsaction="stock" data-id="'+x.id+'">Stock in/out</button> <button class="btn small" data-opsaction="del" data-kind="inventory" data-id="'+x.id+'">Delete</button></td></tr>')),7)+'</div>';
+}
+function inventoryForm(){return '<form class="ops-form" data-opsform="inventory"><div class="ops-fields"><label>Part number *<input name="partNo" required></label><label>Description *<input name="description" required></label><label>Compatible machine / model<input name="compat"></label><label>Current stock<input name="stock" type="number" min="0" value="0"></label><label>Minimum stock<input name="min" type="number" min="0" value="1"></label><label>Unit cost (₹)<input name="price" type="number" min="0" step=".01" value="0"></label><label>Supplier<input name="supplier"></label><label>Storage location<input name="location"></label></div><div class="ops-actions"><button class="btn primary">Add spare part</button></div></form>'}
+function handoverHTML(){
+ return '<div class="ops-grid">'+panel('Shift handover','Record unfinished work and risks for the incoming shift.',handoverForm(),5)+panel('Handover history','Use clear factual notes and acknowledge the handover with the next shift.',table(['Date/time','Machine','From → To','Status','Summary','Action'],data.handovers.slice().sort((a,b)=>(b.time||'').localeCompare(a.time||'')).map(x=>'<tr><td>'+fmt(x.time)+'</td><td>'+esc(machineName(x.machine))+'</td><td>'+esc(x.from||'—')+' → '+esc(x.to||'—')+'</td><td>'+badge(x.status||'Pending')+'</td><td>'+esc(x.summary||'—')+'<div class="ops-mini">'+esc(x.alarms||'')+'</div></td><td>'+(x.status==='Acknowledged'?'':'<button class="btn small" data-opsaction="ack" data-id="'+x.id+'">Acknowledge</button> ')+'<button class="btn small" data-opsaction="del" data-kind="handovers" data-id="'+x.id+'">Delete</button></td></tr>')),7)+'</div>';
+}
+function handoverForm(){return '<form class="ops-form" data-opsform="handover"><div class="ops-fields"><label>Date/time<input type="datetime-local" name="time" value="'+dtNow()+'" required></label><label>Machine<select name="machine">'+machineOpts()+'</select></label><label>Outgoing shift / person<input name="from" required></label><label>Incoming shift / person<input name="to" required></label><label>Current machine status<select name="machineStatus">'+opts(['Running','Idle','Breakdown','Maintenance'],'Running')+'</select></label><label>Alarm / fault reference<input name="alarms"></label><label class="full">Handover summary *<textarea name="summary" required placeholder="Current job, unresolved issue, restrictions, pending checks"></textarea></label></div><div class="ops-actions"><button class="btn primary">Save handover</button></div></form>'}
+function docsHTML(){
+ return '<div class="ops-grid">'+panel('Technical document / verified alarm note','Use a local file name or URL. Do not treat unverified notes as manufacturer guidance.',docsForm(),5)+panel('Document and alarm reference library','Store manual links, drawing references and notes against a machine.',table(['Type','Machine','Title / alarm code','Reference / notes','Verification','Action'],data.docs.concat(data.alarms).map(x=>'<tr><td>'+esc(x.kind||'Alarm note')+'</td><td>'+esc(machineName(x.machine))+'</td><td><b>'+esc(x.title||x.code||'—')+'</b></td><td>'+esc(x.ref||x.description||'—')+'<div class="ops-mini">'+esc(x.notes||'')+'</div></td><td>'+badge(x.verified?'Verified against manual':'Needs verification')+'</td><td><button class="btn small" data-opsaction="del" data-kind="'+(x.kind==='Alarm'?'alarms':'docs')+'" data-id="'+x.id+'">Delete</button></td></tr>')),7)+'</div><p class="ops-note">Alarm codes and troubleshooting steps depend on controller model, machine builder configuration and software version. Always confirm against the correct manual and approved safety procedure.</p>';
+}
+function docsForm(){return '<form class="ops-form" data-opsform="doc"><div class="ops-fields"><label>Record type<select name="kind">'+opts(['Manual / document','Alarm'],'Manual / document')+'</select></label><label>Machine<select name="machine">'+machineOpts()+'</select></label><label>Document title / alarm code *<input name="title" required placeholder="Manual title or exact displayed alarm"></label><label>Reference URL / document number<input name="ref" placeholder="URL or document ID"></label><label>Verification<select name="verified">'+opts([['0','Needs verification'],['1','Verified against manual']],'0')+'</select></label><label>Alarm description (if applicable)<input name="description"></label><label class="full">Notes / troubleshooting record<textarea name="notes"></textarea></label></div><div class="ops-actions"><button class="btn primary">Save reference</button></div></form>'}
+function backupHTML(){
+ return '<div class="ops-grid">'+panel('Full backup and restore','JSON backup includes the Operations Hub records. Keep copies outside this browser.', '<div class="ops-actions"><button class="btn primary" data-opsaction="export">Export full JSON backup</button><button class="btn" data-opsaction="import">Import JSON backup</button><input id="opsImportFile" type="file" accept=".json,application/json" hidden></div><div class="ops-divider"></div><p class="ops-note">This backup covers the Operations Hub data only. Use the existing Jobs tab CSV export for legacy repair-log records. Browser storage does not sync across devices.</p>',6)+panel('Printable summary','Open print preview to save the current operations summary as PDF.', '<button class="btn" data-opsaction="print">Print / Save PDF</button><div class="ops-divider"></div><p class="ops-note">Reports use the data entered into this browser. Verify completeness before using them for audits or maintenance decisions.</p>',6)+panel('Data and access','Current storage and integration limitations', '<div class="ops-alert">Local browser storage only. No shared database, login, live CNC connection, automatic notifications or cloud photo storage is configured.</div><p class="ops-note">For multi-user use, deploy a backend with authentication, access controls, backups and managed file storage. Machine status and actual cycle counts require a supported machine-monitoring connection or manual entry.</p>',12)+'</div>';
+}
+function formValues(form){var o={};new FormData(form).forEach(function(v,k){o[k]=String(v).trim()});return o}
+function handleForm(form){
+ var kind=form.getAttribute('data-opsform'),v=formValues(form);
+ if(kind==='machine'){var obj={id:v.id||id(),name:v.name,type:v.type,model:v.model,serial:v.serial,controller:v.controller,controlModel:v.controlModel,location:v.location,status:v.status,notes:v.notes};var i=data.machines.findIndex(x=>x.id===obj.id);if(i>=0)data.machines[i]=obj;else data.machines.push(obj)}
+ if(kind==='production'){if(!v.machine){toast('Add or select a machine first.');return}data.production.push(Object.assign({id:id()},v,{target:num(v.target),good:num(v.good),reject:num(v.reject),cycle:num(v.cycle),downtime:num(v.downtime)}))}
+ if(kind==='downtime'){if(!v.machine){toast('Add or select a machine first.');return}var o=Object.assign({id:id()},v);if(o.end&&minutesBetween(o.start,o.end)===0&&o.end!==o.start){toast('Check breakdown start and repair completion times.');return}data.downtime.push(o);var m=data.machines.find(x=>x.id===o.machine);if(m&&!o.end)m.status='Breakdown';else if(m&&o.end)m.status='Running'}
+ if(kind==='tool'){data.tools.push(Object.assign({id:id()},v,{target:num(v.target),used:num(v.used)}))}
+ if(kind==='maintenance'){data.maintenance.push(Object.assign({id:id()},v))}
+ if(kind==='inventory'){if(data.inventory.some(x=>x.partNo.toLowerCase()===v.partNo.toLowerCase())){toast('That part number already exists. Use Stock in/out instead.');return}data.inventory.push(Object.assign({id:id()},v,{stock:num(v.stock),min:num(v.min),price:num(v.price)}))}
+ if(kind==='handover'){data.handovers.push(Object.assign({id:id()},v,{status:'Pending'}))}
+ if(kind==='doc'){var obj=Object.assign({id:id()},v,{verified:v.verified==='1'});if(v.kind==='Alarm'){obj.kind='Alarm';obj.code=v.title;data.alarms.push(obj)}else{obj.kind='Manual / document';data.docs.push(obj)}}
+ save();editId=null;render();toast('Saved successfully.');
+}
+function csvCell(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}
+function download(name,content,type){var b=new Blob([content],{type:type||'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+function doExport(){download('dn-solutions-operations-backup-'+dateNow()+'.json',JSON.stringify({format:'dn-solutions-ops-backup-v1',exportedAt:new Date().toISOString(),data:data},null,2))}
+function doImport(file){var r=new FileReader();r.onload=function(){try{var x=JSON.parse(r.result);var incoming=x.data||x;if(!incoming||typeof incoming!=='object')throw new Error('Invalid backup');var fresh=empty();Object.keys(fresh).forEach(k=>{if(Array.isArray(incoming[k]))fresh[k]=incoming[k]});if(!Object.keys(fresh).some(k=>fresh[k].length))throw new Error('No Operations Hub records found in this backup');if(!confirm('Import this backup and replace current Operations Hub records? Export a backup first if needed.'))return;data=fresh;save();render();toast('Backup imported.')}catch(e){toast('Could not import: '+e.message)}};r.readAsText(file)}
+function confirmDelete(kind,ident){if(!Array.isArray(data[kind]))return;if(!confirm('Delete this record? This cannot be undone unless you have a backup.'))return;data[kind]=data[kind].filter(x=>x.id!==ident);save();render();toast('Record deleted.')}
+function closeDowntime(ident){var x=data.downtime.find(x=>x.id===ident);if(!x)return;var end=prompt('Enter repair completion date/time (YYYY-MM-DDTHH:MM)',dtNow());if(end===null)return;if(!end||minutesBetween(x.start,end)<=0){toast('Enter a valid completion time after the start.');return}x.end=end;var m=data.machines.find(m=>m.id===x.machine);if(m&&!data.downtime.some(d=>d.machine===m.id&&!d.end))m.status='Running';save();render();toast('Breakdown closed.')}
+function askNumber(label,def){var v=prompt(label,String(def));if(v===null)return null;var n=Number(v);if(!Number.isFinite(n)||n<0){toast('Enter a valid non-negative number.');return null}return n}
+function action(el){
+ var a=el.getAttribute('data-opsaction'),ident=el.getAttribute('data-id'),kind=el.getAttribute('data-kind');
+ if(a==='quickfault'){active='downtime';render();window.scrollTo({top:0,behavior:'smooth'});return}
+ if(a==='quickproduction'){active='production';render();window.scrollTo({top:0,behavior:'smooth'});return}
+ if(a==='export'){doExport();return}
+ if(a==='import'){$('#opsImportFile').click();return}
+ if(a==='print'){window.print();return}
+ if(a==='del'){confirmDelete(kind,ident);return}
+ if(a==='editmachine'){var m=data.machines.find(x=>x.id===ident);active='machines';render();var box=$('[data-opsform="machine"]');if(box)box.outerHTML=machineForm(m);return}
+ if(a==='prefillmachine'){active='machines';render();var f=$('[data-opsform="machine"]');if(f){f.elements.model.value=el.getAttribute('data-model');f.elements.type.value=el.getAttribute('data-type');f.elements.name.focus()}return}
+ if(a==='closeDown'){closeDowntime(ident);return}
+ if(a==='completeMaint'){var m=data.maintenance.find(x=>x.id===ident);if(m){m.status='Complete';m.completedAt=dtNow();save();render();toast('Maintenance marked complete.')}return}
+ if(a==='ack'){var h=data.handovers.find(x=>x.id===ident);if(h){h.status='Acknowledged';h.ackAt=dtNow();save();render();toast('Handover acknowledged.')}return}
+ if(a==='addtoolparts'){var t=data.tools.find(x=>x.id===ident);if(t){var n=askNumber('Add parts machined to this tool',0);if(n!==null){t.used=num(t.used)+n;save();render();toast('Tool usage updated.')}}return}
+ if(a==='stock'){var p=data.inventory.find(x=>x.id===ident);if(p){var n=askNumber('Enter stock change (use negative number for stock out)',0);if(n!==null){if(num(p.stock)+n<0){toast('Stock cannot become negative.');return}p.stock=num(p.stock)+n;save();render();toast('Stock updated.')}}return}
+}
+function renderOpsTabButton(){
+ var tabs=$('#tabs');if(!tabs||tabs.querySelector('[data-opstab="hub"]'))return;
+ var b=document.createElement('button');b.type='button';b.className='tab';b.setAttribute('role','tab');b.setAttribute('data-opstab','hub');b.textContent='Operations Hub';tabs.appendChild(b);
+}
+document.addEventListener('click',function(e){
+ var tab=e.target.closest('[data-opstab]');if(tab){e.preventDefault();e.stopImmediatePropagation();if(tab.getAttribute('data-opstab')==='hub'){active='overview';renderOpsTabButton();render();}else{active=tab.getAttribute('data-opstab');render()}return}
+ var sub=e.target.closest('[data-opstab]');if(sub){active=sub.getAttribute('data-opstab');render();return}
+ var a=e.target.closest('[data-opsaction]');if(a){e.preventDefault();e.stopImmediatePropagation();action(a);return}
+},true);
+document.addEventListener('submit',function(e){var f=e.target.closest('[data-opsform]');if(!f)return;e.preventDefault();e.stopImmediatePropagation();handleForm(f)},true);
+document.addEventListener('change',function(e){if(e.target.id==='opsImportFile'&&e.target.files&&e.target.files[0]){doImport(e.target.files[0]);e.target.value=''}},true);
+var obs=new MutationObserver(function(){renderOpsTabButton()});var tabsEl=$('#tabs');if(tabsEl)obs.observe(tabsEl,{childList:true,subtree:true});
+renderOpsTabButton();
+})();
+</script>
+
+
+<style id="cloud-sync-style">
+#cloudAccess{position:fixed;right:16px;bottom:16px;z-index:9990;width:min(390px,calc(100vw - 24px));color:#eff6ff;font:14px/1.45 system-ui,sans-serif}
+#cloudAccess .cloud-card{background:rgba(8,20,37,.94);border:1px solid rgba(158,197,247,.28);border-radius:18px;padding:15px;box-shadow:0 20px 55px rgba(0,0,0,.35);backdrop-filter:blur(20px)}
+#cloudAccess .cloud-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+#cloudAccess .cloud-head strong{font-size:14px}
+#cloudAccess .cloud-small{font-size:11px;color:#a9bdd7}
+#cloudAccess .cloud-fields{display:grid;gap:8px;margin:10px 0}
+#cloudAccess input{width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid rgba(158,197,247,.22);border-radius:10px;background:rgba(255,255,255,.05);color:#fff}
+#cloudAccess button{cursor:pointer;border:1px solid rgba(158,197,247,.25);border-radius:10px;padding:9px 11px;background:rgba(255,255,255,.07);color:#eff6ff}
+#cloudAccess button.primary{background:linear-gradient(135deg,#78b8ff,#a5a0ff);color:#081629;border:0;font-weight:700}
+#cloudAccess .cloud-actions{display:flex;flex-wrap:wrap;gap:7px}
+#cloudAccess .cloud-status{margin:9px 0 0;color:#b9cce3;font-size:12px;overflow-wrap:anywhere}
+#cloudAccess .cloud-status.error{color:#ff9eac}
+#cloudAccess .cloud-toggle{border-radius:999px;padding:9px 12px;background:rgba(9,22,39,.92);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+#cloudAccess.collapsed .cloud-card{display:none}
+@media print{#cloudAccess{display:none!important}}
+</style>
+
+<div id="cloudAccess" class="collapsed" aria-live="polite">
+ <button class="cloud-toggle" id="cloudToggle" type="button">☁ Shared database</button>
+ <section class="cloud-card">
+  <div class="cloud-head"><strong>Secure shared database</strong><button id="cloudCollapse" type="button" aria-label="Collapse">−</button></div>
+  <div class="cloud-small">Sign in with an account created by your administrator. Cloud sync is separate from local browser storage.</div>
+  <div id="cloudConfigWarning" class="cloud-status error">Cloud setup required: add your Supabase URL and public anon key in cloud-config.js.</div>
+  <div id="cloudLoginArea">
+   <div class="cloud-fields">
+    <input id="cloudEmail" type="email" autocomplete="username" placeholder="Work email">
+    <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Password">
+   </div>
+   <div class="cloud-actions"><button id="cloudLogin" class="primary" type="button">Sign in</button></div>
+  </div>
+  <div id="cloudSignedArea" hidden>
+   <div id="cloudUser" class="cloud-small"></div>
+   <div class="cloud-actions" style="margin-top:10px">
+    <button id="cloudPush" class="primary" type="button">Upload local data</button>
+    <button id="cloudPull" type="button">Download shared data</button>
+    <button id="cloudLogout" type="button">Sign out</button>
+   </div>
+  </div>
+  <div id="cloudStatus" class="cloud-status">Not connected.</div>
+ </section>
+</div>
+
+<script src="cloud-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script id="cloud-sync-script">
+(function(){
+ 'use strict';
+ const DATA_KEY='dn_solutions_ops_hub_v1';
+ const WORKSPACE='main';
+ const root=document.getElementById('cloudAccess');
+ if(!root)return;
+ const $=id=>document.getElementById(id);
+ let client=null, session=null, busy=false;
+ function status(msg,isError){$('cloudStatus').textContent=msg;$('cloudStatus').classList.toggle('error',!!isError)}
+ function setBusy(v){busy=v;['cloudLogin','cloudPush','cloudPull','cloudLogout'].forEach(id=>$(id).disabled=v)}
+ function localData(){try{return JSON.parse(localStorage.getItem(DATA_KEY)||'{}')}catch(e){return {}}}
+ function setLocal(d){localStorage.setItem(DATA_KEY,JSON.stringify(d));}
+ function refreshUI(){
+   $('cloudLoginArea').hidden=!!session;
+   $('cloudSignedArea').hidden=!session;
+   $('cloudUser').textContent=session?'Signed in as '+(session.user.email||session.user.id):'';
+ }
+ function cfg(){
+   const c=window.DN_CLOUD_CONFIG||{};
+   return c.url&&c.anonKey&&!String(c.url).includes('YOUR_PROJECT')&&!String(c.anonKey).includes('YOUR_SUPABASE')?c:null;
+ }
+ async function init(){
+   const c=cfg();
+   if(!c){$('cloudConfigWarning').hidden=false;status('Add Supabase URL and anon key to cloud-config.js, then reload.',true);return}
+   if(!window.supabase||!window.supabase.createClient){status('Could not load the Supabase client. Check internet access.',true);return}
+   client=window.supabase.createClient(c.url,c.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+   $('cloudConfigWarning').hidden=true;
+   const res=await client.auth.getSession();
+   session=res.data.session;
+   refreshUI();
+   if(session)status('Signed in. Choose upload or download to synchronize the Operations Hub.');
+   client.auth.onAuthStateChange((_event,s)=>{session=s;refreshUI();if(s)status('Signed in. Cloud data has not been synchronized until you choose an action.');});
+ }
+ async function login(){
+   if(!client){status('Cloud setup is incomplete. Follow SETUP-SHARED-DATABASE.txt.',true);return}
+   const email=$('cloudEmail').value.trim(),password=$('cloudPassword').value;
+   if(!email||!password){status('Enter your work email and password.',true);return}
+   setBusy(true);
+   try{const r=await client.auth.signInWithPassword({email,password});if(r.error)throw r.error;session=r.data.session;refreshUI();status('Signed in. Download shared data first if this is a new device.')}
+   catch(e){status(e.message||'Sign-in failed.',true)}finally{setBusy(false)}
+ }
+ async function push(){
+   if(!session||!client){status('Sign in first.',true);return}
+   if(!confirm('Upload this browser’s Operations Hub data to the shared workspace? This replaces the shared snapshot. Download shared data first if you need to preserve changes from another device.'))return;
+   setBusy(true);
+   try{
+     const payload={workspace_id:WORKSPACE,data:localData(),updated_at:new Date().toISOString(),updated_by:session.user.id};
+     const r=await client.from('dn_ops_workspace').upsert(payload,{onConflict:'workspace_id'});
+     if(r.error)throw r.error;
+     status('Upload complete at '+new Date().toLocaleString()+'. Other users can download the shared snapshot.');
+   }catch(e){status((e.message||'Upload failed')+' Check table and RLS setup.',true)}finally{setBusy(false)}
+ }
+ async function pull(){
+   if(!session||!client){status('Sign in first.',true);return}
+   if(!confirm('Download the shared workspace and replace this browser’s Operations Hub data? Export a local backup first if needed.'))return;
+   setBusy(true);
+   try{
+     const r=await client.from('dn_ops_workspace').select('data,updated_at,updated_by').eq('workspace_id',WORKSPACE).maybeSingle();
+     if(r.error)throw r.error;
+     if(!r.data){status('No shared snapshot exists yet. Use Upload local data from the device that has the records.');return}
+     setLocal(r.data.data||{});
+     status('Downloaded shared snapshot last updated '+new Date(r.data.updated_at).toLocaleString()+'. Reloading…');
+     location.reload();
+   }catch(e){status((e.message||'Download failed')+' Check table and RLS setup.',true)}finally{setBusy(false)}
+ }
+ async function logout(){if(!client)return;setBusy(true);try{const r=await client.auth.signOut();if(r.error)throw r.error;session=null;refreshUI();status('Signed out. Local data remains in this browser.')}catch(e){status(e.message,true)}finally{setBusy(false)}}
+ $('cloudToggle').addEventListener('click',()=>root.classList.toggle('collapsed'));
+ $('cloudCollapse').addEventListener('click',()=>root.classList.add('collapsed'));
+ $('cloudLogin').addEventListener('click',login);
+ $('cloudPush').addEventListener('click',push);
+ $('cloudPull').addEventListener('click',pull);
+ $('cloudLogout').addEventListener('click',logout);
+ init();
+})();
+</script>
+
+</body></html>
